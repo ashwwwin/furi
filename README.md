@@ -96,20 +96,15 @@ furi http off
 
 #### Routes
 
-<(mcp-name)> == <(author/repo)|(alias)>
+mcp-name == <(author/repo)|(alias)>
 
-- /api/<(mcp-name)>/status
-- /api/<(mcp-name)>/restart
-- /api/<(mcp-name)>/logs
-- /api/<(mcp-name)>/call
-
-curl http://localhost:3000/api/status
-
-```
+- /api/<`mcp-name`>/status
+- /api/<`mcp-name`>/restart
+- /api/<`mcp-name`>/logs
+- /api/<`mcp-name`>/call
 
 ## Closing notes
 
 If you've made it this far in the documentation, I hope you find Furikake useful and time saving. I built this for fun, and a way for me to work MCP's easily. If you wish to contribute, feel free.
 
 If you think this is a good idea, please star the repo! If you think this is a bad idea, please star the repo and leave a comment.
-```
