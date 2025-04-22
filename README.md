@@ -4,11 +4,12 @@ Furikake is an easy to use, local CLI & API for MCP management.
 
 - Download MCPs [from GitHub]
 - Fully featured CLI (with pretty loading)
-- HTTP API Routes (stdio to http)
+- HTTP API Routes (stdio to http, standard routes)
+- Port allocation (with auto-increment)
 - Process state management [with PM2]
 - Logs for each process
-- Built with Bun and Typescript
-- is good with rice
+- Built with [Bun](https://bun.sh/) and [Typescript](https://www.typescriptlang.org/)
+- is good with [rice](https://www.amazon.com/Nori-Fume-Furikake-Rice-Seasoning/dp/B07WJ46JVZ)
 
 Supports MCP's built with Typescript/Javascript;
 
@@ -80,9 +81,9 @@ furi status all
 
 ### Using the HTTP API
 
-Any MCP that is running, will automatically have an http route.
-Turning an MCP on/off can only be done via the cli.
-To access your MCP's via http, you can turn on the route via:
+- Any MCP that is running, will automatically have an http route.
+- Turning an MCP on/off can only be done via the cli.
+- To access your MCP's via http, you can turn on the route via:
 
 ```bash
 furi http on
@@ -96,15 +97,18 @@ furi http off
 
 #### Routes
 
-mcp-name == <(author/repo)|(alias)>
+- /api/tools (to get a list of all available tools for all MCPs that are online)
+-
 
-- /api/<`mcp-name`>/status
-- /api/<`mcp-name`>/restart
-- /api/<`mcp-name`>/logs
-- /api/<`mcp-name`>/call
+- /api/`mcp-name`/status
+- /api/`mcp-name`/restart
+- /api/`mcp-name`/logs
+- /api/`mcp-name`/tools (to get a list of all available tools for the defined MCP)
+
+`mcp-name` is either `author/repo` or `alias`.
 
 ## Closing notes
 
-If you've made it this far in the documentation, I hope you find Furikake useful and time saving. I built this for fun, and a way for me to work MCP's easily. If you wish to contribute, feel free.
+If you've made it this far in the documentation, I hope you find Furikake useful and time saving. I built this for fun, and a way for me to work with MCP's more hands on. If you wish to contribute, feel free.
 
-If you think this is a good idea, please star the repo! If you think this is a bad idea, please star the repo and leave a comment.
+If you think this is a good idea, please star the repo. If you think this is a bad idea, please star the repo and leave a comment.
