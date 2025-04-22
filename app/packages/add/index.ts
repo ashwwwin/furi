@@ -2,6 +2,7 @@ import { createSpinner } from "nanospinner";
 import { validatePackage } from "./actions/validatePackage";
 import { cloneRepo } from "./actions/cloneRepo";
 import { initializePackage } from "./actions/initializePackage";
+import { join } from "path";
 
 export const addPackage = async (packageName: string) => {
   const spinner = createSpinner(`[${packageName}] Installing`);
@@ -21,7 +22,46 @@ export const addPackage = async (packageName: string) => {
       return spinner.error(`[${packageName}] Could not find repo`);
 
     await cloneRepo(result.packageUrl);
-    await initializePackage(packageName);
+    const response = await initializePackage(packageName);
+
+    if (!response.success) {
+      spinner.warn(`Failed to build\n     \x1b[2m${response.message}\x1b[0m`);
+
+      // Write the prompt to stdout
+      process.stdout.write(
+        `\n[${packageName}] Do you want to keep the repo? (y/n) `
+      );
+
+      // Read user input from stdin
+      let input = "";
+      for await (const line of console) {
+        input = line;
+        break; // Just read one line
+      }
+
+      if (input.trim().toLowerCase() !== "y") {
+        // Delete the package directory if the build failed
+        const mcpPath = process.env.MCP_PATH;
+        if (mcpPath) {
+          const packagePath = join(mcpPath, packageName);
+          await Bun.$`rm -rf ${packagePath}`.quiet();
+        }
+
+        spinner.error(`[${packageName}] Failed to install`);
+
+        return;
+      }
+
+      spinner.warn(`[${packageName}] Failed to build but downloaded`);
+      console.log(
+        `     \x1b[2mYou can edit the package in ${join(
+          process.env.MCP_PATH || "",
+          packageName
+        )}\x1b[0m`
+      );
+
+      return;
+    }
 
     return spinner.success(`[${packageName}] Installed`);
   } catch (error) {

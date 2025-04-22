@@ -4,10 +4,10 @@ Furikake is an easy to use, local CLI & API for MCP management.
 
 - Download MCPs [from GitHub]
 - Fully featured CLI (with pretty loading)
-- HTTP API Routes (stdio to http, standard routes)
-- Port allocation (with auto-increment)
+- HTTP API Routes (uses Bun http, stdio to http, clear and standard routes)
 - Process state management [with PM2]
 - Logs for each process
+- Uses npm to configure and run an MCP
 - Built with [Bun](https://bun.sh/) and [Typescript](https://www.typescriptlang.org/)
 - is good with [rice](https://www.amazon.com/Nori-Fume-Furikake-Rice-Seasoning/dp/B07WJ46JVZ)
 
@@ -83,7 +83,8 @@ furi status all
 
 - Any MCP that is running, will automatically have an http route.
 - Turning an MCP on/off can only be done via the cli.
-- To access your MCP's via http, you can turn on the route via:
+
+To access your MCP's via http, you can turn on the proxy via:
 
 ```bash
 furi http on
@@ -97,9 +98,8 @@ furi http off
 
 #### Routes
 
+- /api/status (to get a list of all running MCPs)
 - /api/tools (to get a list of all available tools for all MCPs that are online)
--
-
 - /api/`mcp-name`/status
 - /api/`mcp-name`/restart
 - /api/`mcp-name`/logs
@@ -109,6 +109,8 @@ furi http off
 
 ## Closing notes
 
-If you've made it this far in the documentation, I hope you find Furikake useful and time saving. I built this for fun, and a way for me to work with MCP's more hands on. If you wish to contribute, feel free.
+If you've made it this far, I hope you find Furikake useful and time saving. I built this for fun as a way for me to work with MCP's more hands on. If you wish to contribute, feel free to open an issue or a pull request, I will merge it after I check out your changes.
 
 If you think this is a good idea, please star the repo. If you think this is a bad idea, please star the repo and leave a comment.
+
+Also check out [Bun](https://bun.sh/) if you haven't already!

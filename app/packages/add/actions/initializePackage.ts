@@ -1,5 +1,11 @@
 import { join } from "path";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  readdirSync,
+} from "node:fs";
 
 type PackageOutput = {
   success: boolean;
@@ -58,15 +64,22 @@ export const initializePackage = async (
     const packageJson = JSON.parse(packageJsonContent);
     const hasTsConfig = existsSync(join(packagePath, "tsconfig.json"));
 
+    // Check if it's an ES module
+    const isEsm = packageJson.type === "module";
+
     // Determine run command based on package.json scripts
     let runCommand = "";
     let buildCommand = null;
 
     const scripts = packageJson.scripts || {};
 
-    // Check for build script
+    // Check for build script options in order of preference
     if (scripts.build) {
       buildCommand = "build";
+    } else if (scripts.compile) {
+      buildCommand = "compile";
+    } else if (scripts.prepublish) {
+      buildCommand = "prepublish";
     }
 
     // Determine run command based on available scripts
@@ -91,28 +104,173 @@ export const initializePackage = async (
       }
     }
 
-    // Install dependencies
+    // Install dependencies but skip the build step
     try {
-      // Just install dependencies with no build step by default
+      // Install dependencies but skip scripts to avoid build issues
       await Bun.$`cd ${packagePath} && npm install --ignore-scripts`.quiet();
 
-      // Skip TypeScript build if there are issues with types
-      if (hasTsConfig) {
-        // TypeScript handling could go here if needed
-      } else if (buildCommand) {
-        // Only run build for non-TypeScript projects or if forced
-        try {
-          await Bun.$`cd ${packagePath} && npm run ${buildCommand}`.quiet();
-        } catch (buildError) {
-          console.warn(
-            `Build step failed, but continuing with installation: ${
-              buildError instanceof Error
-                ? buildError.message
-                : String(buildError)
-            }`
-          );
+      let buildSuccessful = false;
+
+      // First check if the package already has a dist/ or lib/ directory with compiled JS
+      const hasDistDir = existsSync(join(packagePath, "dist"));
+      const hasLibDir = existsSync(join(packagePath, "lib"));
+
+      if (hasDistDir || hasLibDir) {
+        // console.log(`Package already has compiled JavaScript files`);
+        buildSuccessful = true;
+      } else {
+        // Check if we need to run a build
+        const needsBuild = hasTsConfig || buildCommand;
+
+        if (needsBuild) {
+          // Let's first try the normal build process
+          if (buildCommand) {
+            try {
+              //   console.log(`Running build command: npm run ${buildCommand}`);
+              await Bun.$`cd ${packagePath} && npm run ${buildCommand}`.quiet();
+              //   console.log(`Build completed successfully`);
+              buildSuccessful = true;
+            } catch (buildError) {
+              //   console.warn(`Build failed: ${String(buildError)}`);
+            }
+          }
+
+          // If build failed or there was no build command but we have TypeScript
+          if (!buildSuccessful && hasTsConfig) {
+            // console.log(`Attempting to handle TypeScript files manually`);
+
+            // Check for TypeScript files in various locations
+            const entryPoints = [
+              {
+                path: join(packagePath, "src", "index.ts"),
+                relativePath: "../src/index.ts",
+              },
+              {
+                path: join(packagePath, "index.ts"),
+                relativePath: "../index.ts",
+              },
+              {
+                path: join(packagePath, "src", "main.ts"),
+                relativePath: "../src/main.ts",
+              },
+              {
+                path: join(packagePath, "main.ts"),
+                relativePath: "../main.ts",
+              },
+            ];
+
+            let foundTsFile = null;
+            for (const entry of entryPoints) {
+              if (existsSync(entry.path)) {
+                foundTsFile = entry;
+                // console.log(`Found TypeScript entry point at ${entry.path}`);
+                break;
+              }
+            }
+
+            if (foundTsFile) {
+              // Create dist directory if it doesn't exist
+              const distDir = join(packagePath, "dist");
+              if (!existsSync(distDir)) {
+                mkdirSync(distDir, { recursive: true });
+                // console.log(`Created dist directory`);
+              }
+
+              // Create the appropriate wrapper based on module type
+              if (isEsm) {
+                // ESM wrapper
+                const esmWrapper = `
+// This is an automatically generated ESM wrapper for TypeScript files
+import { register } from 'ts-node';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Register ts-node
+register({ transpileOnly: true, swc: true });
+
+// Get current file's directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Import the TypeScript file
+const srcPath = join(__dirname, '${foundTsFile.relativePath}');
+
+// Dynamic import with error handling
+export default async function init() {
+  try {
+    return await import(srcPath);
+  } catch (error) {
+    console.error('Error loading TypeScript files:', error);
+    throw error;
+  }
+}
+
+// Initialize
+init().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
+`;
+                writeFileSync(join(distDir, "index.js"), esmWrapper, "utf-8");
+
+                // Create package.json in dist to make it an ES module
+                const distPackageJson = {
+                  type: "module",
+                };
+                writeFileSync(
+                  join(distDir, "package.json"),
+                  JSON.stringify(distPackageJson, null, 2),
+                  "utf-8"
+                );
+              } else {
+                // CommonJS wrapper
+                const cjsWrapper = `
+// This is an automatically generated CommonJS wrapper for TypeScript files
+try {
+  require('ts-node/register');
+  module.exports = require('${foundTsFile.relativePath}');
+} catch (error) {
+  console.error('Error loading TypeScript files:', error);
+  throw error;
+}
+`;
+                writeFileSync(join(distDir, "index.js"), cjsWrapper, "utf-8");
+              }
+
+              //   console.log(
+              //     `Created ${
+              //       isEsm ? "ESM" : "CommonJS"
+              //     } wrapper for TypeScript entry point at ${foundTsFile.path}`
+              //   );
+
+              // Add ts-node as a dependency
+              try {
+                await Bun.$`cd ${packagePath} && npm install --save-dev ts-node typescript @swc/core`.quiet();
+                // console.log(
+                //   `Installed ts-node and dependencies for runtime TypeScript support`
+                // );
+                buildSuccessful = true;
+              } catch (installError) {
+                // console.warn(
+                //   `Failed to install ts-node: ${String(installError)}`
+                // );
+              }
+            } else {
+              //   console.warn(`Could not find TypeScript entry point`);
+            }
+          }
+        } else {
+          // If the package doesn't have TypeScript or a build command, just mark as successful
+          //   console.log(`Package doesn't require building`);
+          buildSuccessful = true;
         }
       }
+
+      //   console.log(
+      //     `Package setup completed${
+      //       buildSuccessful ? " successfully" : " with warnings"
+      //     }`
+      //   );
     } catch (error) {
       return {
         success: false,
@@ -169,7 +327,7 @@ export const initializePackage = async (
 
     return {
       success: true,
-      message: `Package ${packageName} initialized successfully`,
+      message: `${packageName} initialized successfully`,
       runCommand: finalRunCommand,
     };
   } catch (error) {
