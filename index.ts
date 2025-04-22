@@ -3,6 +3,7 @@ import { Command } from "commander";
 import { addPackage, removePackage, listPackages } from "./app/packages";
 import { getEnvironmentVariables } from "./app/mcp";
 import { startMCP } from "./app/mcp/start";
+import { callMCP } from "./app/mcp/call";
 
 const program = new Command();
 
@@ -56,6 +57,16 @@ program
   .argument("<packageName>", "Package name")
   .action((packageName) => {
     startMCP(packageName);
+  });
+
+program
+  .command("call")
+  .description("Call a tool")
+  .argument("<packageName>", "Package name")
+  .argument("<method>", "Method name")
+  .argument("<data>", "Data")
+  .action((packageName, method, data) => {
+    callMCP(packageName, method, data);
   });
 
 program.parse(process.argv);

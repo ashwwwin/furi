@@ -9,7 +9,7 @@ Furikake is an easy to use, local CLI & API for MCP management.
 - Logs for each process
 - Uses npm to configure and run an MCP
 - Built with [Bun](https://bun.sh/) and [Typescript](https://www.typescriptlang.org/)
-- is good with [rice](https://www.amazon.com/Nori-Fume-Furikake-Rice-Seasoning/dp/B07WJ46JVZ)
+- is good with rice
 
 Supports MCP's built with Typescript/Javascript;
 
@@ -21,7 +21,7 @@ curl -fsSL https://bun.sh/install | bash
 
 ## How to use
 
-### Install a new MCP
+#### Manage MCPS
 
 Furikake works with any public github repo as follows:
 
@@ -31,7 +31,7 @@ furi add <author/repo>
 
 _eg. furi add smithery-ai/mcp-fetch_
 
-### Delete an MCP
+#### Delete an MCP
 
 ```bash
 furi delete <author/repo>
@@ -39,7 +39,7 @@ furi delete <author/repo>
 
 _eg. furi delete smithery-ai/mcp-fetch_
 
-### List installed MCPs
+#### List installed MCPs
 
 Show all installed MCPs
 
@@ -47,36 +47,46 @@ Show all installed MCPs
 furi list
 ```
 
-### Start an MCP
+#### Start an MCP
 
 ```bash
-furi start <author/repo>
+furi start <author/repo> -e <env>
 ```
 
-_You can alias the <author/repo> in the configuration.json_
+-e env is optional and dependant on the MCP server downloaded, in order to view the env variables for an MCP, use:
 
-### Stop an MCP
+```bash
+furi env <author/repo>
+```
+
+#### Stop an MCP
 
 ```bash
 furi stop <author/repo>
 ```
 
-### Restart an MCP
+#### Restart an MCP
 
 ```bash
 furi restart <author/repo>
 ```
 
-### Check the status of an MCP
+#### Check the status of an MCP
 
 ```bash
 furi status <author/repo>
 ```
 
-### List all running MCPs
+#### List all running MCPs
 
 ```bash
 furi status all
+```
+
+#### Call a running MCP
+
+```bash
+furi call <author/repo> <method> <data>
 ```
 
 ### Using the HTTP API
