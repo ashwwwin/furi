@@ -15,7 +15,7 @@ program
 \x1b[2mCLI & API for MCP management\x1b[0m
 
 https://furikake.app
-https://github.com/ashwwin/furikake-cli\n`
+https://github.com/ashwwin/furi\n`
   );
 
 program

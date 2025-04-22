@@ -2,7 +2,7 @@
 
 Furikake is an easy to use, local CLI & API for MCP management.
 
-Currently supporting MCP's built with Typescript/Javascript with support to run hundreds of MCP's in parallel, with logs, process management and more.
+Supports MCP's built with Typescript/Javascript; Run MCP's in parallel, with logs, process management, http api routes and more.
 
 ## Installation (macOS/Linux)
 
