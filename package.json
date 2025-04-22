@@ -1,0 +1,21 @@
+{
+  "name": "furikake-cli",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "furi": "./index.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  
+  "dependencies": {
+    "commander": "^13.1.0",
+    "isomorphic-git": "^1.30.1",
+    "nanospinner": "^1.2.2"
+  }
+}
