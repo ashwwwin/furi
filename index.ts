@@ -78,10 +78,10 @@ program
   .command("call")
   .description("Call a tool")
   .argument("<packageName>", "Package name")
-  .argument("<method>", "Method name")
+  .argument("<toolName>", "Tool name")
   .argument("<data>", "Data")
-  .action((packageName, method, data) => {
-    callTool(packageName, method, data);
+  .action((packageName, toolName, data) => {
+    callTool(packageName, toolName, data);
   });
 
 program.parse(process.argv);

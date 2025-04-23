@@ -86,7 +86,7 @@ furi status all
 #### Call a running MCP
 
 ```bash
-furi call <author/repo> <method> <data>
+furi call <author/repo> <toolName> <data>
 ```
 
 ### Using the HTTP API

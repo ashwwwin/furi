@@ -3,7 +3,7 @@ import { setupMcpConnection } from "../../helpers/mcpConnectionManager";
 
 export const callTool = async (
   packageName: string,
-  method: string,
+  toolName: string,
   data: string
 ) => {
   const spinner = createSpinner(`[${packageName}] Connecting to MCP server`);
@@ -24,10 +24,12 @@ export const callTool = async (
     const tools = await client.listTools();
 
     // Check if the requested method exists
-    const requestedTool = tools.tools.find((tool: any) => tool.name === method);
+    const requestedTool = tools.tools.find(
+      (tool: any) => tool.name === toolName
+    );
     if (!requestedTool) {
       spinner.error(
-        `[${packageName}] Tool '${method}' not found.\n     \x1b[2mTo view tools, use furi tools ${packageName}\x1b[0m`
+        `[${packageName}] Tool '${toolName}' not found.\n     \x1b[2mTo view tools, use furi tools ${packageName}\x1b[0m`
       );
       await disconnect();
       return;
@@ -54,7 +56,7 @@ export const callTool = async (
     try {
       // Call the tool
       const result = await client.callTool({
-        name: method,
+        name: toolName,
         arguments: toolParams,
       });
 
