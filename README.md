@@ -3,6 +3,7 @@
 Furikake is an easy to use, local CLI & API for MCP management.
 
 - Download MCPs [from GitHub]
+- Supports MCP's built with Typescript & Javascript. _Python (maybe in the future)._
 - Fully featured CLI (with pretty loading)
 - HTTP API Routes (uses Bun http, stdio to http, clear and standard routes)
 - Process state management [with PM2]
@@ -10,8 +11,6 @@ Furikake is an easy to use, local CLI & API for MCP management.
 - Uses npm to configure and run an MCP
 - Built with [Bun](https://bun.sh/) and [Typescript](https://www.typescriptlang.org/)
 - is good with rice
-
-Supports MCP's built with Typescript/Javascript;
 
 ## Installation (macOS/Linux)
 
