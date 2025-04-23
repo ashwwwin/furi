@@ -1,9 +1,8 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
 import { addPackage, removePackage, listPackages } from "./app/packages";
-import { getEnvironmentVariables } from "./app/mcp";
-import { startMCP } from "./app/mcp/start";
-import { callMCP } from "./app/mcp/call";
+import { getEnvironmentVariables, stopMCP, startMCP } from "./app/mcp";
+import { callTool, listTools } from "./app/tools";
 
 const program = new Command();
 
@@ -60,13 +59,29 @@ program
   });
 
 program
+  .command("stop")
+  .description("Stop an MCP server")
+  .argument("<packageName>", "Package name")
+  .action((packageName) => {
+    stopMCP(packageName);
+  });
+
+program
+  .command("tools")
+  .description("List all tools for an MCP server")
+  .argument("<packageName>", "Package name")
+  .action((packageName) => {
+    listTools(packageName);
+  });
+
+program
   .command("call")
   .description("Call a tool")
   .argument("<packageName>", "Package name")
   .argument("<method>", "Method name")
   .argument("<data>", "Data")
   .action((packageName, method, data) => {
-    callMCP(packageName, method, data);
+    callTool(packageName, method, data);
   });
 
 program.parse(process.argv);
