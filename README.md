@@ -1,4 +1,5 @@
 # 🍃 Furikake (or furi) (WIP)
+
 Furikake is an easy to use, local CLI & API for MCP management.
 
 ![image](https://github.com/user-attachments/assets/8f313cdd-0452-4227-8aea-75127d779f56)
@@ -125,6 +126,6 @@ furi http off
 
 If you've made it this far, I hope you find Furikake useful and time saving. I built this for fun as a way for me to work with MCP's more hands on. If you wish to contribute, feel free to open an issue or a pull request. I will merge after I check out your changes.
 
-If you think this is a good idea, please star the repo. If you think this is a bad idea please star the repo.
+If you think this is a good idea, please star the repo. If you think this is a bad idea, please star the repo.
 
 Thanks for checking out Furikake!
