@@ -43,7 +43,7 @@ _eg. furi rename smithery-ai/mcp-fetch fetch_
 #### Delete an MCP
 
 ```bash
-furi delete <author/repo>
+furi delete <mcp-name>
 ```
 
 _eg. furi delete fetch_
@@ -59,43 +59,49 @@ furi list
 #### Start an MCP
 
 ```bash
-furi start <author/repo> -e <env>
+furi start <mcp-name> -e <env>
 ```
 
 -e env is optional and dependant on the MCP server downloaded, in order to view the env variables for an MCP, use:
 
 ```bash
-furi env <author/repo>
+furi env <mcp-name>
+```
+
+You can get a list of all the tools available (with details) an MCP by using:
+
+```bash
+furi tools <mcp-name>
 ```
 
 #### Stop an MCP
 
 ```bash
-furi stop <author/repo>
+furi stop <mcp-name>
 ```
 
 #### Restart an MCP
 
 ```bash
-furi restart <author/repo>
+furi restart <mcp-name>
 ```
 
-#### Check the status of an MCP
+<!-- #### Check the status of an MCP
 
 ```bash
-furi status <author/repo>
+furi status <mcp-name>
 ```
 
 #### List all running MCPs
 
 ```bash
 furi status all
-```
+``` -->
 
 #### Call a running MCP
 
 ```bash
-furi call <author/repo> <toolName> <data>
+furi call <mcp-name> <toolName> <data>
 ```
 
 ### Using the HTTP API
@@ -106,13 +112,13 @@ furi call <author/repo> <toolName> <data>
 To access your MCP's via http, you can turn on the proxy via:
 
 ```bash
-furi http on
+furi http start
 ```
 
 To turn off the route, you can use:
 
 ```bash
-furi http off
+furi http start
 ```
 
 #### Routes
