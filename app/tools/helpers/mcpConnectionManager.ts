@@ -73,10 +73,11 @@ export const checkProcessStatus = async (
   packageName: string,
   spinner: any
 ): Promise<boolean> => {
-  const processName = `mcp-${packageName.replace("/", "-")}`;
+  const processName = `furi_${packageName.replace("/", "-")}`;
   const list = await getPm2List();
 
   const processEntry = list.find((p) => p.name === processName);
+
   if (!processEntry) {
     spinner.error(
       `[${packageName}] Server not running \n     \x1b[2mStart it first with furi start ${packageName}\x1b[0m`

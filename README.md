@@ -6,7 +6,7 @@ Furikake is an easy to use, local CLI & API for MCP management.
 
 - Download MCP servers [from GitHub]
 - Fully featured CLI
-- Supports MCP's built with Typescript & Javascript
+- Supports MCP's built with Typescript & Javascript. Python (future).
 - HTTP API Routes (uses Bun http, stdio to http, clear and standard routes)
 - Process state management [with PM2]
 - Logs for each process
@@ -32,13 +32,21 @@ furi add <author/repo>
 
 _eg. furi add smithery-ai/mcp-fetch_
 
+You can also rename an MCP by using the `rename` command, please note this will restart the MCP if it is running.
+
+```bash
+furi rename <old-name> <new-name>
+```
+
+_eg. furi rename smithery-ai/mcp-fetch fetch_
+
 #### Delete an MCP
 
 ```bash
 furi delete <author/repo>
 ```
 
-_eg. furi delete smithery-ai/mcp-fetch_
+_eg. furi delete fetch_
 
 #### List installed MCPs
 

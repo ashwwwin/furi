@@ -1,8 +1,14 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
 import { addPackage, removePackage, listPackages } from "./app/packages";
-import { getEnvironmentVariables, stopMCP, startMCP } from "./app/mcp";
+import {
+  getEnvironmentVariables,
+  stopMCP,
+  startMCP,
+  renameMCP,
+} from "./app/mcp";
 import { callTool, listTools } from "./app/tools";
+import { startHttpServer, stopHttpServer, restartHttpServer } from "./app/http";
 
 const program = new Command();
 
@@ -67,6 +73,15 @@ program
   });
 
 program
+  .command("rename")
+  .description("Rename an alias in the configuration")
+  .argument("<currentName>", "Current name/alias")
+  .argument("<newName>", "New name/alias")
+  .action((currentName, newName) => {
+    renameMCP(currentName, newName);
+  });
+
+program
   .command("tools")
   .description("List all tools for an MCP server")
   .argument("<packageName>", "Package name")
@@ -84,4 +99,30 @@ program
     callTool(packageName, toolName, data);
   });
 
+const httpCommand = new Command("http").description("HTTP API");
+
+httpCommand
+  .command("start")
+  .description("Start the HTTP API server")
+  .option("-p, --port <port>", "Port number", "9339")
+  .action(async (options) => {
+    const port = parseInt(options.port || "9339");
+    await startHttpServer(port);
+  });
+
+httpCommand
+  .command("stop")
+  .description("Stop the HTTP API server")
+  .action(async () => {
+    await stopHttpServer();
+  });
+
+httpCommand
+  .command("restart")
+  .description("Restart the running HTTP API server (server must be running)")
+  .action(async () => {
+    await restartHttpServer();
+  });
+
+program.addCommand(httpCommand);
 program.parse(process.argv);

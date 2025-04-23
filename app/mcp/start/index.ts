@@ -88,7 +88,7 @@ export const startMCP = async (packageName: string) => {
         {
           script: cmd,
           args: args.join(" "),
-          name: `mcp-${packageName.replace("/", "-")}`,
+          name: `furi_${packageName.replace("/", "-")}`,
           cwd,
           output: join(
             process.cwd(),

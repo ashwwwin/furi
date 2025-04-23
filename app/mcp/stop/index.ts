@@ -7,7 +7,7 @@ export const stopMCP = async (packageName: string) => {
 
   try {
     // Create PM2 process name from package name
-    const processName = `mcp-${packageName.replace("/", "-")}`;
+    const processName = `furi_${packageName.replace("/", "-")}`;
 
     // Connect to PM2
     await new Promise<void>((resolve, reject) => {
@@ -32,6 +32,7 @@ export const stopMCP = async (packageName: string) => {
     });
 
     const processEntry = list.find((p) => p.name === processName);
+
     if (!processEntry) {
       spinner.error(`[${packageName}] Process not found`);
       return;
