@@ -16,9 +16,19 @@ Furikake is an easy to use, local CLI & API for MCP management.
 
 ## Installation (macOS/Linux)
 
+Firstly, install Bun (if you don't have it already):
+
 ```bash
 curl -fsSL https://bun.sh/install | bash
 ```
+
+Then, install Furikake:
+
+```bash
+Install script goes here
+```
+
+You should now be good to go!
 
 ## How to use
 
