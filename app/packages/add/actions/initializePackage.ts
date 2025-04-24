@@ -80,6 +80,8 @@ export const initializePackage = async (
       buildCommand = "compile";
     } else if (scripts.prepublish) {
       buildCommand = "prepublish";
+    } else if (scripts.prepare) {
+      buildCommand = "prepare";
     }
 
     // Determine run command based on available scripts
@@ -225,7 +227,6 @@ init().catch(err => {
               } else {
                 // CommonJS wrapper
                 const cjsWrapper = `
-// This is an automatically generated CommonJS wrapper for TypeScript files
 try {
   require('ts-node/register');
   module.exports = require('${foundTsFile.relativePath}');

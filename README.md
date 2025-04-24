@@ -1,8 +1,8 @@
+![image](https://github.com/user-attachments/assets/8f313cdd-0452-4227-8aea-75127d779f56)
+
 # 🍃 Furikake (or furi) (WIP)
 
 Furikake is an easy to use, local CLI & API for MCP management.
-
-![image](https://github.com/user-attachments/assets/8f313cdd-0452-4227-8aea-75127d779f56)
 
 - Download MCP servers [from GitHub]
 - Fully featured CLI
@@ -128,7 +128,7 @@ furi http start
 To turn off the route, you can use:
 
 ```bash
-furi http start
+furi http stop
 ```
 
 #### Routes
