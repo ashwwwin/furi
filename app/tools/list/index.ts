@@ -14,12 +14,10 @@ export const listTools = async (packageName: string) => {
 
     const { client, disconnect } = resources;
 
-    spinner.update(`[${packageName}] Retrieving available tools`);
-
     // List available tools
     const tools = await client.listTools();
 
-    spinner.success(`[${packageName}] Available tools`);
+    spinner.success(`[${packageName}] Found ${tools.tools.length} tool(s)`);
 
     // Display tools in a readable format
     if (tools && tools.tools && tools.tools.length > 0) {
