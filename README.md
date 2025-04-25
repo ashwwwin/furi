@@ -48,7 +48,7 @@ You can also rename an MCP by using the `rename` command, please note this will 
 furi rename <old-name> <new-name>
 ```
 
-_eg. furi rename smithery-ai/mcp-fetch fetch_
+_eg. furi rename smithery-ai/mcp-fetch mcp-fetch_
 
 #### Delete an MCP
 
@@ -56,7 +56,7 @@ _eg. furi rename smithery-ai/mcp-fetch fetch_
 furi delete <mcp-name>
 ```
 
-_eg. furi delete fetch_
+_eg. furi delete mcp-fetch_
 
 #### List installed MCPs
 
@@ -69,22 +69,22 @@ furi list
 #### Start an MCP
 
 ```bash
-furi start <mcp-name> -e <NAME=VALUE>
+furi start <mcp-name> -e <'{"name1":"value1", "name2":"value2"}'>
 ```
 
--e env is optional and dependant on the MCP server downloaded
+-e env is optional and dependant on the MCP server being called
 
-Once you start a server with the `-e` flag, it will be saved to the config file.
+Ensure you pass a valid JSON object to the `-e` flag.
 
-It will be re-used if you start the server again without the specfic variable.
+Once you start a server with the `-e` flag, it will be saved to the config file and re-used when using the server again.
 
-In order to view the env variables for an MCP, use:
+In order to view the env variables required for an MCP, use:
 
 ```bash
 furi env <mcp-name>
 ```
 
-You can get a list of all the tools available (with details) an MCP by using:
+You can get a list of all the tools available (with details) of any MCP by using:
 
 ```bash
 furi tools <mcp-name>
@@ -153,8 +153,6 @@ furi http stop
 - /api/`mcp-name`/restart
 - /api/`mcp-name`/logs
 - /api/`mcp-name`/tools (to get a list of all available tools for the defined MCP)
-
-`mcp-name` is either `author/repo` or `alias`.
 
 ## Star History
 

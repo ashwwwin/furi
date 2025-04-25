@@ -6,6 +6,7 @@ import {
   stopMCP,
   startMCP,
   renameMCP,
+  restartMCP,
 } from "./app/mcp";
 import { callTool, listTools } from "./app/tools";
 import { startHttpServer, stopHttpServer, restartHttpServer } from "./app/http";
@@ -70,6 +71,14 @@ program
   .argument("<packageName>", "Package name")
   .action((packageName) => {
     stopMCP(packageName);
+  });
+
+program
+  .command("restart")
+  .description("Restart an MCP server")
+  .argument("<packageName>", "Package name")
+  .action((packageName) => {
+    restartMCP(packageName);
   });
 
 program

@@ -2,9 +2,7 @@ import { isServerRunning, stopServer, createServer } from "../server/server";
 import { createSpinner } from "nanospinner";
 
 export const restartHttpServer = async () => {
-  const spinner = createSpinner(
-    "Restarting HTTP API server with PM2..."
-  ).start();
+  const spinner = createSpinner("Restarting HTTP API server").start();
 
   try {
     // Check if server is running

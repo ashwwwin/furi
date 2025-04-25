@@ -2,7 +2,7 @@ import { createServer, setPort, isServerRunning } from "../server/server";
 import { createSpinner } from "nanospinner";
 
 export const startHttpServer = async (port?: number) => {
-  const spinner = createSpinner("Starting HTTP API server with PM2...").start();
+  const spinner = createSpinner("Starting HTTP API server").start();
 
   try {
     // Check if a server is already running

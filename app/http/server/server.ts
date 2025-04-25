@@ -63,7 +63,7 @@ export const getServer = async () => {
 };
 
 /**
- * Create and start the server with PM2
+ * Create and start the server
  */
 export const createServer = async (): Promise<any> => {
   const isRunning = await isServerRunning();
