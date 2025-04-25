@@ -104,11 +104,27 @@ export const getPM2StatusCore = async (
 
       // Get all installed MCPs from configuration
       const allMCPs = Object.keys(config).map((configName) => {
-        // For each config entry, look for a matching PM2 process
-        const process = runningProcesses.find((p) => p.name === configName);
+        // Find the matching process by comparing the last part of the config name
+        // To handle cases like "arjunkmrm/perplexity-search" vs "perplexity"
+        const configBaseName = configName.split("/").pop() || configName;
+        const simplifiedConfigName = configBaseName
+          .replace(/-/g, "")
+          .toLowerCase();
+
+        // Find a process match by comparing simplified names
+        const process = runningProcesses.find((p) => {
+          const simplifiedProcName = p.name.replace(/-/g, "").toLowerCase();
+          return (
+            simplifiedProcName.includes(simplifiedConfigName) ||
+            simplifiedConfigName.includes(simplifiedProcName)
+          );
+        });
 
         if (process) {
-          return process;
+          return {
+            ...process,
+            name: configName, // Use the config name for display
+          };
         } else {
           // No matching process found, show as offline
           return {
@@ -129,8 +145,28 @@ export const getPM2StatusCore = async (
       };
     } else {
       // For a specific MCP, try to find it in the PM2 processes
-      const pmName = `furi_${mcpName}`;
-      const process = processList.find((proc) => proc.name === pmName);
+      const pmName = `furi_${
+        mcpName.split("/").pop()?.replace(/-/g, "") || mcpName
+      }`;
+
+      // Find process with more flexible matching
+      const process = processList.find((proc) => {
+        // Direct match first
+        if (proc.name === `furi_${mcpName}`) return true;
+
+        // Then try simplified name match
+        const simplifiedProcName = proc.name
+          .replace("furi_", "")
+          .replace(/-/g, "")
+          .toLowerCase();
+        const simplifiedMcpName =
+          mcpName.split("/").pop()?.replace(/-/g, "").toLowerCase() || "";
+
+        return (
+          simplifiedProcName.includes(simplifiedMcpName) ||
+          simplifiedMcpName.includes(simplifiedProcName)
+        );
+      });
 
       if (!process) {
         // If the process is not found in PM2 but exists in config, show it as offline

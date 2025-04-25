@@ -15,16 +15,44 @@ import os from "os";
  */
 const getMCPLogs = (mcpName: string, lines: number = 15): string => {
   try {
-    const pmName = `furi_${mcpName}`;
+    // Handle different naming formats
+    const simpleName = mcpName.split("/").pop()?.replace(/-/g, "") || mcpName;
+    const pmName = `furi_${simpleName}`;
     const logsDir = path.join(os.homedir(), ".pm2", "logs");
-    const outLogPath = path.join(logsDir, `${pmName}-out.log`);
-    const errLogPath = path.join(logsDir, `${pmName}-error.log`);
-    const { execSync } = require("child_process");
 
+    // Try to find matching log files - we need to handle cases where PM2 might use
+    // a different name than what we expect
+    const dirFiles = fs.readdirSync(logsDir);
+    const possiblePrefixes = [
+      pmName,
+      `furi_${mcpName}`,
+      `furi_${mcpName.split("/").pop() || mcpName}`,
+    ];
+
+    // Find the first matching log files
+    let outLogFile = null;
+    let errLogFile = null;
+
+    for (const prefix of possiblePrefixes) {
+      const outMatch = dirFiles.find(
+        (f) => f.startsWith(prefix) && f.includes("-out.log")
+      );
+      const errMatch = dirFiles.find(
+        (f) => f.startsWith(prefix) && f.includes("-error.log")
+      );
+
+      if (outMatch) outLogFile = outMatch;
+      if (errMatch) errLogFile = errMatch;
+
+      if (outLogFile || errLogFile) break;
+    }
+
+    const { execSync } = require("child_process");
     let logOutput = "";
 
     // Get stdout logs
-    if (fs.existsSync(outLogPath)) {
+    if (outLogFile) {
+      const outLogPath = path.join(logsDir, outLogFile);
       const outLogs = execSync(`tail -n ${lines} "${outLogPath}"`).toString();
       if (outLogs.trim()) {
         logOutput += "=== STDOUT LOGS ===\n" + outLogs + "\n";
@@ -32,7 +60,8 @@ const getMCPLogs = (mcpName: string, lines: number = 15): string => {
     }
 
     // Get stderr logs
-    if (fs.existsSync(errLogPath)) {
+    if (errLogFile) {
+      const errLogPath = path.join(logsDir, errLogFile);
       const errLogs = execSync(`tail -n ${lines} "${errLogPath}"`).toString();
       if (errLogs.trim()) {
         logOutput += "=== STDERR LOGS ===\n" + errLogs;
