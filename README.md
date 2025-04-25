@@ -69,10 +69,16 @@ furi list
 #### Start an MCP
 
 ```bash
-furi start <mcp-name> -e <env>
+furi start <mcp-name> -e <NAME=VALUE>
 ```
 
--e env is optional and dependant on the MCP server downloaded, in order to view the env variables for an MCP, use:
+-e env is optional and dependant on the MCP server downloaded
+
+Once you start a server with the `-e` flag, it will be saved to the config file.
+
+It will be re-used if you start the server again without the specfic variable.
+
+In order to view the env variables for an MCP, use:
 
 ```bash
 furi env <mcp-name>
@@ -82,6 +88,20 @@ You can get a list of all the tools available (with details) an MCP by using:
 
 ```bash
 furi tools <mcp-name>
+```
+
+You can get the input data for a tool by using:
+
+```bash
+furi input <mcp-name> <tool-name>
+```
+
+then you can call the tool with:
+
+#### Call a tool
+
+```bash
+furi call <mcp-name> <toolName> <'{"input-name":"data"}'>
 ```
 
 #### Stop an MCP
@@ -107,12 +127,6 @@ furi status <mcp-name>
 ```bash
 furi status all
 ``` -->
-
-#### Call a running MCP
-
-```bash
-furi call <mcp-name> <toolName> <data>
-```
 
 ### Using the HTTP API
 
@@ -152,4 +166,4 @@ If you've made it this far, I hope you find Furikake useful and time saving. I b
 
 If you think this is a good idea, please star the repo. If you think this is a bad idea, please star the repo.
 
-Thanks for checking out Furikake!
+Thanks for checking out Furikake.

@@ -120,7 +120,7 @@ export const renameMCP = async (currentName: string, newName: string) => {
     // Write the updated configuration back to file
     try {
       writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
-      spinner.success(`Renamed alias from "${currentName}" to "${newName}"`);
+      spinner.success(`Renamed from "${currentName}" to "${newName}"`);
 
       // If process was running, restart it with the new name
       if (isProcessRunning) {
