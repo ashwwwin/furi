@@ -32,7 +32,11 @@ export const listTools = async (packageName: string) => {
 
         // Show input schema if available
         if (tool.inputSchema && tool.inputSchema.properties) {
-          console.log("          ➤ Input data:");
+          // @ts-ignore
+          if (tool.inputSchema.properties === {}) {
+            console.log("          ➤ Input data:");
+          }
+
           const properties = tool.inputSchema.properties;
           Object.keys(properties).forEach((propName) => {
             const prop = properties[propName];
