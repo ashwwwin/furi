@@ -25,7 +25,7 @@ type SmitheryConfig = {
 // The goal of this function is to initialize the package
 // Get it to the point where it can be used by the user
 export const initializePackage = async (
-  packageName: string
+  mcpName: string
 ): Promise<PackageOutput> => {
   try {
     const basePath = process.env.BASE_PATH;
@@ -37,13 +37,13 @@ export const initializePackage = async (
     }
 
     // Get the package path
-    const parts = packageName.split("/");
+    const parts = mcpName.split("/");
     const [author, repo] = parts;
 
     if (parts.length !== 2 || !author || !repo) {
       return {
         success: false,
-        message: "Invalid package name format. Expected 'user/repo'",
+        message: "Invalid MCP Name format. Expected 'user/repo'",
       };
     }
 
@@ -171,12 +171,12 @@ export const initializePackage = async (
           // Let's first try the specified build command (from smithery or package.json)
           if (buildCommand) {
             try {
-              console.log(`Running build command: ${buildCommand}`);
+              // console.log(`Running build command: ${buildCommand}`);
               // Execute the command via sh
               await Bun.$`sh -c ${`cd ${packagePath} && ${buildCommand}`}`.quiet();
               buildSuccessful = true;
             } catch (buildError) {
-              console.warn(`Build failed: ${String(buildError)}`);
+              // console.warn(`Build failed: ${String(buildError)}`);
             }
           }
 
@@ -394,7 +394,7 @@ try {
     }
 
     // Update configuration.json
-    const configPath = join(basePath as string, "configuration.json");
+    const configPath = join(basePath as string, ".furikake/configuration.json");
     const configExists = existsSync(configPath);
     let config: Record<
       string,
@@ -420,7 +420,7 @@ try {
         }
       }
 
-      config[packageName] = {
+      config[mcpName] = {
         run: finalRunCommand,
         source: packagePath,
       };
@@ -437,7 +437,7 @@ try {
 
     return {
       success: true,
-      message: `${packageName} initialized`,
+      message: `${mcpName} initialized`,
       runCommand: finalRunCommand,
     };
   } catch (error) {

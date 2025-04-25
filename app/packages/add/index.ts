@@ -3,33 +3,48 @@ import { validatePackage } from "./actions/validatePackage";
 import { cloneRepo } from "./actions/cloneRepo";
 import { initializePackage } from "./actions/initializePackage";
 import { join } from "path";
+import { readFileSync } from "fs";
 
-export const addPackage = async (packageName: string) => {
-  const spinner = createSpinner(`[${packageName}] Installing`);
+export const addPackage = async (mcpName: string) => {
+  const spinner = createSpinner(`[${mcpName}] Installing`);
   let exitCode = 0;
 
   try {
     spinner.start();
-    const result = await validatePackage(packageName);
+    const result = await validatePackage(mcpName);
+
+    console.log(result);
 
     if (result.isInstalled) {
+      const basePath = process.env.BASE_PATH || "";
+      if (!basePath) {
+        throw new Error("BASE_PATH environment variable is not set");
+      }
+
+      // TODO: Get the 'alias' from the configuration file (since already installed)
+      const config = JSON.parse(
+        readFileSync(join(basePath, ".furikake/configuration.json"), "utf-8")
+      );
+
+      let alias = "TODO";
+
       return spinner.warn(
-        `[${packageName}] Already installed\n     \x1b[2mTo uninstall, use: furi remove ${result.alias}\x1b[0m`
+        `[${mcpName}] Already installed\n     \x1b[2mTo uninstall, use: furi remove ${alias}\x1b[0m`
       );
     }
 
     if (!result.isValid)
-      return spinner.error(`[${packageName}] Could not find repo`);
+      return spinner.error(`[${mcpName}] Could not find repo`);
 
     await cloneRepo(result.packageUrl);
-    const response = await initializePackage(packageName);
+    const response = await initializePackage(mcpName);
 
     if (!response.success) {
       spinner.warn(`Failed to build\n     \x1b[2m${response.message}\x1b[0m`);
 
       // Write the prompt to stdout
       process.stdout.write(
-        `\n[${packageName}] Do you want to keep the repo? (y/n) `
+        `\n[${mcpName}] Do you want to keep the repo? (y/n) `
       );
 
       // Read user input from stdin
@@ -43,30 +58,30 @@ export const addPackage = async (packageName: string) => {
         // Delete the package directory if the build failed
         const basePath = process.env.BASE_PATH;
         if (basePath) {
-          const packagePath = join(basePath, packageName);
+          const packagePath = join(basePath, mcpName);
           await Bun.$`rm -rf ${packagePath}`.quiet();
         }
 
-        spinner.error(`[${packageName}] Failed to install`);
+        spinner.error(`[${mcpName}] Failed to install`);
 
         return;
       }
 
-      spinner.warn(`[${packageName}] Failed to build but downloaded`);
+      spinner.warn(`[${mcpName}] Failed to build but downloaded`);
       console.log(
         `     \x1b[2mYou can edit the package in ${join(
           process.env.BASE_PATH + ".furikake/installed",
-          packageName
+          mcpName
         )}\x1b[0m`
       );
 
       return;
     }
 
-    return spinner.success(`[${packageName}] Installed`);
+    return spinner.success(`[${mcpName}] Installed`);
   } catch (error) {
     exitCode = 1;
-    return spinner.error(`[${packageName}] Failed to install`);
+    return spinner.error(`[${mcpName}] Failed to install`);
   } finally {
     spinner.stop();
     process.exit(exitCode);

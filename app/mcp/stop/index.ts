@@ -1,12 +1,12 @@
 import { createSpinner } from "nanospinner";
 import { stopMCPCore } from "./actions/stopMCP";
 
-export const stopMCP = async (packageName: string) => {
-  const spinner = createSpinner(`[${packageName}] Stopping`);
+export const stopMCP = async (mcpName: string) => {
+  const spinner = createSpinner(`[${mcpName}] Stopping`);
   spinner.start();
 
   try {
-    const result = await stopMCPCore(packageName);
+    const result = await stopMCPCore(mcpName);
 
     if (result.success) {
       spinner.success(result.message);
@@ -15,7 +15,7 @@ export const stopMCP = async (packageName: string) => {
     }
   } catch (error: any) {
     spinner.error(
-      `[${packageName}] Failed to stop: ${error.message || String(error)}`
+      `[${mcpName}] Failed to stop: ${error.message || String(error)}`
     );
   }
 };

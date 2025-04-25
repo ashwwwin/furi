@@ -2,23 +2,23 @@ import { createSpinner } from "nanospinner";
 import { setupMcpConnection } from "../../helpers/mcpConnectionManager";
 
 export const callTool = async (
-  packageName: string,
+  mcpName: string,
   toolName: string,
   data: string
 ) => {
-  const spinner = createSpinner(`[${packageName}] Connecting to MCP server`);
+  const spinner = createSpinner(`[${mcpName}] Connecting to MCP server`);
   spinner.start();
 
   try {
     // Setup MCP connection using shared utilities
-    const resources = await setupMcpConnection(packageName, spinner);
+    const resources = await setupMcpConnection(mcpName, spinner);
     if (!resources || !resources.client) {
       return; // Connection failed
     }
 
     const { client, disconnect } = resources;
 
-    spinner.update(`[${packageName}] Sending tool call request`);
+    spinner.update(`[${mcpName}] Sending tool call request`);
 
     // List available tools
     const tools = await client.listTools();
@@ -29,7 +29,7 @@ export const callTool = async (
     );
     if (!requestedTool) {
       spinner.error(
-        `[${packageName}] Tool '${toolName}' not found.\n     \x1b[2mTo view tools, use furi tools ${packageName}\x1b[0m`
+        `[${mcpName}] Tool '${toolName}' not found.\n     \x1b[2mTo view tools, use furi tools ${mcpName}\x1b[0m`
       );
       await disconnect();
       return;
@@ -47,7 +47,7 @@ export const callTool = async (
       }
     } catch (e) {
       spinner.error(
-        `[${packageName}] Invalid JSON input format.\n     \x1b[2mInput must be a valid JSON string: '{"param1":"value1","param2":"value2"}'\x1b[0m`
+        `[${mcpName}] Invalid JSON input format.\n     \x1b[2mInput must be a valid JSON string: '{"param1":"value1","param2":"value2"}'\x1b[0m`
       );
       await disconnect();
       return;
@@ -65,7 +65,7 @@ export const callTool = async (
 
       if (result && result.error) {
         // Explicit error property
-        spinner.error(`[${packageName}] Tool call failed`);
+        spinner.error(`[${mcpName}] Tool call failed`);
         const errorDetails = formatErrorDetails(result.error);
         console.log(`\x1b[31mError: ${errorDetails}\x1b[0m`);
         hasError = true;
@@ -95,9 +95,9 @@ export const callTool = async (
 
         // Only show success if no errors were detected
         if (!hasError) {
-          spinner.success(`[${packageName}] Tool call completed`);
+          spinner.success(`[${mcpName}] Tool call completed`);
         } else {
-          spinner.error(`[${packageName}] Tool call returned errors`);
+          spinner.error(`[${mcpName}] Tool call returned errors`);
         }
 
         // Display the content
@@ -131,14 +131,14 @@ export const callTool = async (
         }
       } else {
         // No content case
-        spinner.success(`[${packageName}] Tool call completed`);
+        spinner.success(`[${mcpName}] Tool call completed`);
         console.log(
           "     \x1b[2mNo content returned from the tool call\x1b[0m"
         );
       }
     } catch (callError) {
       // Handle errors during the tool call
-      spinner.error(`[${packageName}] Error during tool execution`);
+      spinner.error(`[${mcpName}] Error during tool execution`);
       console.log(`\x1b[31m${formatErrorDetails(callError)}\x1b[0m`);
     }
 
@@ -146,7 +146,7 @@ export const callTool = async (
     await disconnect();
   } catch (error: any) {
     spinner.error(
-      `[${packageName}] Error: ${error.message || formatErrorDetails(error)}`
+      `[${mcpName}] Error: ${error.message || formatErrorDetails(error)}`
     );
   }
 };

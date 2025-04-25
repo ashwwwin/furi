@@ -13,7 +13,7 @@ export const stopHttpServer = async () => {
     }
 
     await stopServer();
-    spinner.success({ text: "HTTP API server stopped" });
+    spinner.success({ text: "HTTP API server offline" });
   } catch (error: any) {
     spinner.error({
       text: `Failed to stop HTTP API server: ${

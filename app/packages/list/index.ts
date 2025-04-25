@@ -1,45 +1,28 @@
 import { createSpinner } from "nanospinner";
-import { join } from "path";
+import { displayAllStatuses } from "../../mcp/status/actions/displayStatus";
+import { getPM2StatusCore } from "../../mcp/status/actions/getPM2Status";
 
-export const listPackages = async () => {
-  const spinner = createSpinner("Listing packages");
+export const listPackages = async (showDetails: boolean) => {
+  const spinner = createSpinner("Getting MCPs");
   spinner.start();
 
-  try {
-    const basePath = process.env.BASE_PATH;
-    if (!basePath) {
-      return spinner.error("BASE_PATH environment variable is not set");
-    }
+  const result = await getPM2StatusCore("all");
 
-    const configPath = join(basePath, ".furikake/configuration.json");
-    const configFile = Bun.file(configPath);
-
-    const exists = await configFile.exists();
-    if (!exists) {
-      return spinner.error(`Configuration file not found at ${configPath}`);
-    }
-
-    const configContent = await configFile.text();
-    if (!configContent.trim()) {
-      return spinner.success("No packages installed");
-    }
-
-    const config = JSON.parse(configContent);
-    const packages = Object.keys(config);
-
-    if (packages.length === 0) {
-      return spinner.success("No packages installed");
-    }
-
-    spinner.success(`Found ${packages.length} installed MCPs`);
-    packages.forEach((pkg) => {
-      console.log(`     \x1b[2m- ${pkg}\x1b[0m`);
+  if (!result.success) {
+    return spinner.error("Failed to get MCPs");
+  }
+  if (Array.isArray(result.data)) {
+    spinner.success(`${result.data.length} found\n`);
+    displayAllStatuses(result.data, {
+      showDetails: showDetails,
     });
-  } catch (error) {
-    return spinner.error(
-      `Failed to list packages: ${
-        error instanceof Error ? error.message : String(error)
-      }`
-    );
+
+    if (!showDetails) {
+      console.log(
+        "\n\x1b[2mIf you want to see server details use: furi status\x1b[0m"
+      );
+    }
+  } else {
+    spinner.error("Failed to get MCPs");
   }
 };

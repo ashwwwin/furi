@@ -5,12 +5,15 @@
 Furikake is an easy to use, local CLI & API for MCP management.
 
 - Download MCP servers [from GitHub]
-- Fully featured CLI
-- Supports MCP's built with Typescript & Javascript. Python (future).
+- Smithery.yaml detection (source of execution)
+- Automatically tries to handle build, run if unspecified
+- Fully featured CLI [nanospinners, readability]
+- Typescript & Javascript MCP's built in are supported
+- Python based MCP's are a key roadmap item (and will be supported)
 - HTTP API Routes (uses Bun http, stdio to http, clear and standard routes)
-- Process state management [with PM2]
-- Logs for each process
-- Uses npm to configure and run an MCP
+- Customizable port and visibility of sudo routes
+- View all running MCPs + logs for each process
+- Process state management [with PM2](https://pm2.keymetrics.io/)
 - Built with [Bun](https://bun.sh/) and [Typescript](https://www.typescriptlang.org/)
 - is good with rice
 
@@ -53,7 +56,7 @@ _eg. furi rename smithery-ai/mcp-fetch mcp-fetch_
 #### Delete an MCP
 
 ```bash
-furi delete <mcp-name>
+furi delete <mcpName>
 ```
 
 _eg. furi delete mcp-fetch_
@@ -69,7 +72,7 @@ furi list
 #### Start an MCP
 
 ```bash
-furi start <mcp-name> -e <'{"name1":"value1", "name2":"value2"}'>
+furi start <mcpName> -e '{"name1":"value1", "name2":"value2"}'
 ```
 
 -e env is optional and dependant on the MCP server being called
@@ -81,13 +84,13 @@ Once you start a server with the `-e` flag, it will be saved to the config file 
 In order to view the env variables required for an MCP, use:
 
 ```bash
-furi env <mcp-name>
+furi env <mcpName>
 ```
 
 You can get a list of all the tools available (with details) of any MCP by using:
 
 ```bash
-furi tools <mcp-name>
+furi tools <mcpName>
 ```
 
 then you can call the tool with:
@@ -95,7 +98,7 @@ then you can call the tool with:
 #### Call a tool
 
 ```bash
-furi call <mcp-name> <tool-name> '{"param1":"value1", "param2":"value2"}'
+furi call <mcpName> <toolName> '{"param1":"value1", "param2":"value2"}'
 ```
 
 _Parameters must be a valid JSON string enclosed in single quotes_
@@ -103,13 +106,13 @@ _Parameters must be a valid JSON string enclosed in single quotes_
 #### Stop an MCP
 
 ```bash
-furi stop <mcp-name>
+furi stop <mcpName>
 ```
 
 #### Restart an MCP
 
 ```bash
-furi restart <mcp-name>
+furi restart <mcpName>
 ```
 
 #### Get the status of all ruuning MCPs
@@ -120,11 +123,13 @@ This will show you the status of all running MCPs.
 furi status
 ```
 
-If you want to get the status of a specific MCP, you can use:
+If you want to get the logs a specific MCP, you can use:
 
 ```bash
-furi status <mcp-name>
+furi status <mcpName>
 ```
+
+_to add more output lines, use `-l <lines>`_
 
 ### Using the HTTP API
 
@@ -137,20 +142,36 @@ To access your MCP's via http, you can turn on the proxy via:
 furi http start
 ```
 
+In order to pass a port, you can use the `http start -p <port>` flag.
+
+```bash
+furi http start -p 9339
+```
+
+_If you don't pass a port, it will default to 9339_
+
 To turn off the route, you can use:
 
 ```bash
 furi http stop
 ```
 
+#### Finally
+
+All installed MCPs, your configuration and logs are stored in the `.furikake` directory which can be located by running:
+
+```bash
+furi where
+```
+
 #### Routes
 
 - /api/status (to get a list of all running MCPs)
 - /api/tools (to get a list of all available tools for all MCPs that are online)
-- /api/`mcp-name`/status
-- /api/`mcp-name`/restart
-- /api/`mcp-name`/logs
-- /api/`mcp-name`/tools (to get a list of all available tools for the defined MCP)
+- /api/`mcpName`/status
+- /api/`mcpName`/restart
+- /api/`mcpName`/logs
+- /api/`mcpName`/tools (to get a list of all available tools for the defined MCP)
 
 ## Star History
 

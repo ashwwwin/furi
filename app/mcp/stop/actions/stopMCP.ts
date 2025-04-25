@@ -4,11 +4,11 @@ import pm2 from "pm2";
  * Core function to stop an MCP server without spinner UI
  */
 export const stopMCPCore = async (
-  packageName: string
+  mcpName: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    // Create PM2 process name from package name
-    const processName = `furi_${packageName.replace("/", "-")}`;
+    // Create PM2 process name from MCP Name
+    const processName = `furi_${mcpName.replace("/", "-")}`;
 
     // Connect to PM2
     await new Promise<void>((resolve, reject) => {
@@ -54,14 +54,12 @@ export const stopMCPCore = async (
 
     return {
       success: true,
-      message: `[${packageName}] Stopped`,
+      message: `[${mcpName}] offline`,
     };
   } catch (error: any) {
     return {
       success: false,
-      message: `[${packageName}] Failed to stop: ${
-        error.message || String(error)
-      }`,
+      message: `[${mcpName}] Failed to stop: ${error.message || String(error)}`,
     };
   } finally {
     // Always disconnect from PM2 to allow the process to exit

@@ -1,13 +1,13 @@
 import { createSpinner } from "nanospinner";
 import { setupMcpConnection } from "../../helpers/mcpConnectionManager";
 
-export const listTools = async (packageName: string) => {
-  const spinner = createSpinner(`[${packageName}] Connecting to MCP server`);
+export const listTools = async (mcpName: string) => {
+  const spinner = createSpinner(`[${mcpName}] Connecting to MCP server`);
   spinner.start();
 
   try {
     // Setup MCP connection using shared utilities
-    const resources = await setupMcpConnection(packageName, spinner);
+    const resources = await setupMcpConnection(mcpName, spinner);
     if (!resources || !resources.client) {
       return; // Connection failed
     }
@@ -17,7 +17,7 @@ export const listTools = async (packageName: string) => {
     // List available tools
     const tools = await client.listTools();
 
-    spinner.success(`[${packageName}] Found ${tools.tools.length} tool(s)`);
+    spinner.success(`[${mcpName}] Found ${tools.tools.length} tool(s)`);
 
     // Display tools in a readable format
     if (tools && tools.tools && tools.tools.length > 0) {
@@ -60,7 +60,7 @@ export const listTools = async (packageName: string) => {
         const exampleTool = tools.tools[0];
         console.log("     Example usage:");
         console.log(
-          `          \x1b[32mfuri call ${packageName} ${exampleTool.name} '{"param1":"value1","param2":"value2"}'\x1b[0m`
+          `          \x1b[32mfuri call ${mcpName} ${exampleTool.name} '{"param1":"value1","param2":"value2"}'\x1b[0m`
         );
         console.log(
           "\n\x1b[2m     Note: Parameters must be a valid JSON string enclosed in single quotes\x1b[0m"
@@ -73,6 +73,6 @@ export const listTools = async (packageName: string) => {
     // Cleanup resources
     await disconnect();
   } catch (error: any) {
-    spinner.error(`[${packageName}] Error: ${error.message || String(error)}`);
+    spinner.error(`[${mcpName}] Error: ${error.message || String(error)}`);
   }
 };

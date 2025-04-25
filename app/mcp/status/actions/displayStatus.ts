@@ -6,7 +6,7 @@ import type { MCPStatus } from "./getPM2Status";
  */
 const statusColors: Record<string, (text: string) => string> = {
   online: chalk.green,
-  stopped: chalk.red,
+  offline: chalk.red,
   errored: chalk.red,
   stopping: chalk.yellow,
   launching: chalk.blue,
@@ -16,57 +16,64 @@ const statusColors: Record<string, (text: string) => string> = {
 /**
  * Display all MCP statuses in a table
  */
-export function displayAllStatuses(statuses: MCPStatus[]): void {
+export function displayAllStatuses(
+  statuses: MCPStatus[],
+  options?: { showDetails?: boolean }
+): void {
   if (statuses.length === 0) {
     console.log(chalk.yellow("No MCP servers are installed"));
     return;
   }
 
-  // Table header
-  console.log(
-    "\n" +
-      chalk.dim("Name".padEnd(30)) +
-      chalk.dim("Status".padEnd(12)) +
-      chalk.dim("PID".padEnd(10)) +
-      chalk.dim("Memory".padEnd(10)) +
-      chalk.dim("CPU".padEnd(10)) +
-      chalk.dim("Uptime")
-  );
+  if (options?.showDetails) {
+    // Table header
+    console.log(
+      chalk.dim("MCP name".padEnd(38)) +
+        chalk.dim("Status".padEnd(12)) +
+        // chalk.dim("PID".padEnd(10)) +
+        chalk.dim("Memory".padEnd(10)) +
+        chalk.dim("CPU".padEnd(10)) +
+        chalk.dim("Uptime".padEnd(12.5)) +
+        chalk.dim("PID")
+    );
+  } else {
+    console.log(chalk.dim("MCP name".padEnd(38)));
+  }
 
   // Table rows
   statuses.forEach((status) => {
     const statusColor = statusColors[status.status] || chalk.white;
-    console.log(
-      chalk.white(status.name.padEnd(30)) +
-        statusColor(status.status.padEnd(12)) +
-        chalk.white((status.pid || "N/A").toString().padEnd(10)) +
-        chalk.white(status.memory.padEnd(10)) +
-        chalk.white(status.cpu.padEnd(10)) +
-        chalk.white(status.uptime)
-    );
+    if (options?.showDetails) {
+      console.log(
+        chalk.white(status.name.padEnd(38)) +
+          statusColor(status.status.padEnd(12)) +
+          // chalk.white((status.pid || "N/A").toString().padEnd(10)) +
+          chalk.white(status.memory.padEnd(10)) +
+          chalk.white(status.cpu.padEnd(10)) +
+          chalk.white(status.uptime.padEnd(12.5)) +
+          chalk.white(status.pid)
+      );
+    } else {
+      console.log(chalk.white(status.name.padEnd(38)));
+    }
   });
-
-  console.log(); // Empty line at the end
 }
 
-/**
- * Display status for a single MCP
- */
 export function displaySingleStatus(status: MCPStatus): void {
   const statusColor =
     status.status === "online"
       ? chalk.green
-      : status.status === "stopped" || status.status === "errored"
+      : status.status === "offline" || status.status === "errored"
       ? chalk.red
       : status.status === "stopping" || status.status === "launching"
       ? chalk.yellow
       : chalk.gray;
 
-  console.log(chalk.bold(`\n${chalk.white(status.name)}`));
-  console.log(`Status:  ${statusColor(status.status)}`);
-  console.log(`PID:     ${status.pid || "N/A"}`);
-  console.log(`Memory:  ${status.memory}`);
-  console.log(`CPU:     ${status.cpu}`);
-  console.log(`Uptime:  ${status.uptime}`);
-  console.log(); // Empty line at the end
+  console.log(
+    `${chalk.bold(
+      `${chalk.white(status.name)}`
+    )}                   (${statusColor(status.status)} / ${status.memory} / ${
+      status.cpu
+    } / ${status.uptime} / ${status.pid})`
+  );
 }

@@ -4,24 +4,22 @@ type EnvironmentVariablesOutput = {
 
 /**
  * Scan a package directory for environment variables
- * @param packageName Name of the package (e.g., "perplexity-search")
+ * @param mcpName Name of the package (e.g., "perplexity-search")
  * @returns Array of environment variables (eg. ["PERPLEXITY_API_KEY", "PERPLEXITY_API_SECRET"])
  */
 export const scanEnvVars = async (
-  packageName: string
+  mcpName: string
 ): Promise<EnvironmentVariablesOutput> => {
   try {
     // Get the package configuration
-    const packageConfig = await getEnv(packageName);
+    const packageConfig = await getEnv(mcpName);
     if (!packageConfig) {
-      throw new Error(`Package "${packageName}" not found in configuration`);
+      throw new Error(`Package "${mcpName}" not found in configuration`);
     }
 
     const sourceDir = packageConfig.source as string;
     if (!sourceDir) {
-      throw new Error(
-        `Source directory not found for package "${packageName}"`
-      );
+      throw new Error(`Source directory not found for package "${mcpName}"`);
     }
 
     const envVars: Record<string, { description: string; required: boolean }> =
@@ -492,8 +490,8 @@ async function scanFileForEnvVars(
   }
 }
 
-export const getEnv = async (packageName: string) => {
+export const getEnv = async (mcpName: string) => {
   const config = Bun.file(".furikake/configuration.json");
   const configJson = await config.json();
-  return configJson[packageName];
+  return configJson[mcpName];
 };

@@ -30,68 +30,70 @@ https://github.com/ashwwin/furi\n\x1b[0m`
 program
   .command("add")
   .description("Install a new MCP server")
-  .argument("<packageName>", "Package name")
-  .action((packageName) => {
-    addPackage(packageName);
+  .argument("<mcpName>", "MCP name")
+  .action((mcpName) => {
+    addPackage(mcpName);
   });
 
 program
   .command("remove")
   .description("Remove an installed MCP server")
-  .argument("<packageName>", "Package name")
-  .action((packageName) => {
-    removePackage(packageName);
+  .argument("<mcpName>", "MCP name")
+  .action((mcpName) => {
+    removePackage(mcpName);
   });
 
 program
   .command("list")
   .description("List all installed MCP servers")
-  .action(() => {
-    listPackages();
+  .option("-d, --details", "Show detailed status information")
+  .action((options) => {
+    listPackages(options.details);
   });
 
 program
   .command("env")
   .description("Get environment variables for the MCP server")
-  .argument("<packageName>", "Package name")
-  .action((packageName) => {
-    getEnvironmentVariables(packageName);
+  .argument("<mcpName>", "MCP name")
+  .action((mcpName) => {
+    getEnvironmentVariables(mcpName);
   });
 
 program
   .command("start")
   .description("Start an MCP server")
-  .argument("<packageName>", "Package name")
-  .action((packageName) => {
-    startMCP(packageName);
+  .argument("<mcpName>", "MCP name")
+  .action((mcpName) => {
+    startMCP(mcpName);
   });
 
 program
   .command("stop")
   .description("Stop an MCP server")
-  .argument("<packageName>", "Package name")
-  .action((packageName) => {
-    stopMCP(packageName);
+  .argument("<mcpName>", "MCP name")
+  .action((mcpName) => {
+    stopMCP(mcpName);
   });
 
 program
   .command("restart")
   .description("Restart an MCP server")
-  .argument("<packageName>", "Package name")
-  .action((packageName) => {
-    restartMCP(packageName);
+  .argument("<mcpName>", "MCP name")
+  .action((mcpName) => {
+    restartMCP(mcpName);
   });
 
 program
   .command("status")
   .description("Get the status of an MCP server")
-  .argument(
-    "[packageName]",
-    "Package name (defaults to 'all' to show all MCPs)",
-    "all"
+  .argument("[mcpName]", "MCP Name (defaults to 'all' to show all MCPs)", "all")
+  .option(
+    "-l, --lines <number>",
+    "Number of log lines to show (for single MCP)",
+    "15"
   )
-  .action((packageName) => {
-    statusMCP(packageName);
+  .action((mcpName, options) => {
+    statusMCP(mcpName, options.lines);
   });
 
 program
@@ -106,19 +108,28 @@ program
 program
   .command("tools")
   .description("List all tools for an MCP server")
-  .argument("<packageName>", "Package name")
-  .action((packageName) => {
-    listTools(packageName);
+  .argument("<mcpName>", "MCP name")
+  .action((mcpName) => {
+    listTools(mcpName);
   });
 
 program
   .command("call")
   .description("Call a tool")
-  .argument("<packageName>", "Package name")
+  .argument("<mcpName>", "MCP name")
   .argument("<toolName>", "Tool name")
   .argument("<data>", "Data")
-  .action((packageName, toolName, data) => {
-    callTool(packageName, toolName, data);
+  .action((mcpName, toolName, data) => {
+    callTool(mcpName, toolName, data);
+  });
+
+program
+  .command("where")
+  .description("Show the path to the .furikake directory")
+  .action(() => {
+    console.log(
+      `Furikake is stored in: \n     \x1b[2m${process.env.BASE_PATH}\x1b[0m`
+    );
   });
 
 const httpCommand = new Command("http").description("HTTP API");

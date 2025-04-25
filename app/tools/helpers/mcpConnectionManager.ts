@@ -70,24 +70,24 @@ export const getPm2ProcessInfo = async (processName: string): Promise<any> => {
 
 // Check if process is running and valid
 export const checkProcessStatus = async (
-  packageName: string,
+  mcpName: string,
   spinner: any
 ): Promise<boolean> => {
-  const processName = `furi_${packageName.replace("/", "-")}`;
+  const processName = `furi_${mcpName.replace("/", "-")}`;
   const list = await getPm2List();
 
   const processEntry = list.find((p) => p.name === processName);
 
   if (!processEntry) {
     spinner.error(
-      `[${packageName}] Server not running \n     \x1b[2mStart it first with furi start ${packageName}\x1b[0m`
+      `[${mcpName}] Server not running \n     \x1b[2mStart it first with furi start ${mcpName}\x1b[0m`
     );
     return false;
   }
 
   if (processEntry.pm2_env.status !== "online") {
     spinner.error(
-      `[${packageName}] Process is not running (status: ${processEntry.pm2_env.status})`
+      `[${mcpName}] Process is not running (status: ${processEntry.pm2_env.status})`
     );
     return false;
   }
@@ -97,19 +97,23 @@ export const checkProcessStatus = async (
 
 // Get configuration for a package
 export const getPackageConfig = (
-  packageName: string
+  mcpName: string
 ): {
   cwdAbsolute: string;
   env: Record<string, string>;
   cmd: string;
   cmdArgs: string[];
 } => {
-  const currentDir = process.cwd();
-  const configPath = join(currentDir, ".furikake/configuration.json");
+  const basePath = process.env.BASE_PATH || "";
+  if (!basePath) {
+    throw new Error("BASE_PATH environment variable is not set");
+  }
+
+  const configPath = join(basePath, ".furikake/configuration.json");
   const config = JSON.parse(readFileSync(configPath, "utf-8"));
   const cwdRelative =
-    config[packageName]?.source || `.furikake/installed/${packageName}`;
-  const cwdAbsolute = join(currentDir, cwdRelative);
+    config[mcpName]?.source || `.furikake/installed/${mcpName}`;
+  const cwdAbsolute = join(basePath, cwdRelative);
 
   // Prepare environment variables
   const env: Record<string, string> = {};
@@ -121,9 +125,9 @@ export const getPackageConfig = (
   if (process.env.USER) env.USER = process.env.USER;
 
   // Add package-specific environment variables
-  if (config[packageName]?.env) {
+  if (config[mcpName]?.env) {
     // Only include non-undefined values
-    for (const [key, value] of Object.entries(config[packageName].env)) {
+    for (const [key, value] of Object.entries(config[mcpName].env)) {
       if (value !== undefined && value !== null) {
         env[key] = String(value);
       }
@@ -131,7 +135,7 @@ export const getPackageConfig = (
   }
 
   // Get the command and args from the config file
-  const configCmd = config[packageName]?.run || "npm run start";
+  const configCmd = config[mcpName]?.run || "npm run start";
   const [cmd, ...cmdArgs] = configCmd.split(" ");
 
   return { cwdAbsolute, env, cmd, cmdArgs };
@@ -139,7 +143,7 @@ export const getPackageConfig = (
 
 // Setup MCP connection
 export const setupMcpConnection = async (
-  packageName: string,
+  mcpName: string,
   spinner: any
 ): Promise<ConnectionResources | null> => {
   // Store resources to clean up
@@ -162,14 +166,14 @@ export const setupMcpConnection = async (
     await connectToPm2();
 
     // Check if the process is running
-    const isRunning = await checkProcessStatus(packageName, spinner);
+    const isRunning = await checkProcessStatus(mcpName, spinner);
     if (!isRunning) {
       await disconnectFromPm2();
       return null;
     }
 
     // Get package configuration
-    const { cwdAbsolute, env, cmd, cmdArgs } = getPackageConfig(packageName);
+    const { cwdAbsolute, env, cmd, cmdArgs } = getPackageConfig(mcpName);
 
     // Create an MCP client
     client = new Client({
@@ -211,7 +215,7 @@ export const setupMcpConnection = async (
       },
     };
   } catch (error: any) {
-    spinner.error(`[${packageName}] Error: ${error.message || String(error)}`);
+    spinner.error(`[${mcpName}] Error: ${error.message || String(error)}`);
 
     // Cleanup on error
     try {

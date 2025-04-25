@@ -38,20 +38,25 @@ export interface MCPStatus {
  * Core function to get status information for MCPs
  */
 export const getPM2StatusCore = async (
-  packageName: string
+  mcpName: string
 ): Promise<{
   success: boolean;
   message: string;
   data?: MCPStatus[] | MCPStatus;
 }> => {
   try {
-    const configPath = join(process.cwd(), ".furikake/configuration.json");
+    const basePath = process.env.BASE_PATH || "";
+    if (!basePath) {
+      throw new Error("BASE_PATH environment variable is not set");
+    }
+
+    const configPath = join(basePath, ".furikake/configuration.json");
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
-    if (packageName !== "all" && !config[packageName]) {
+    if (mcpName !== "all" && !config[mcpName]) {
       return {
         success: false,
-        message: `[${packageName}] Configuration not found`,
+        message: `[${mcpName}] Configuration not found`,
       };
     }
 
@@ -75,7 +80,7 @@ export const getPM2StatusCore = async (
       });
     });
 
-    if (packageName === "all") {
+    if (mcpName === "all") {
       // Get all running MCP processes from PM2
       const runningProcesses = processList
         .filter((proc) => proc.name.startsWith("furi_"))
@@ -105,11 +110,11 @@ export const getPM2StatusCore = async (
         if (process) {
           return process;
         } else {
-          // No matching process found, show as stopped
+          // No matching process found, show as offline
           return {
             name: configName,
             pid: "N/A",
-            status: "stopped",
+            status: "offline",
             memory: "N/A",
             cpu: "N/A",
             uptime: "N/A",
@@ -124,16 +129,16 @@ export const getPM2StatusCore = async (
       };
     } else {
       // For a specific MCP, try to find it in the PM2 processes
-      const pmName = `furi_${packageName}`;
+      const pmName = `furi_${mcpName}`;
       const process = processList.find((proc) => proc.name === pmName);
 
       if (!process) {
-        // If the process is not found in PM2 but exists in config, show it as stopped
-        if (config[packageName]) {
+        // If the process is not found in PM2 but exists in config, show it as offline
+        if (config[mcpName]) {
           const status: MCPStatus = {
-            name: packageName,
+            name: mcpName,
             pid: "N/A",
-            status: "stopped",
+            status: "offline",
             memory: "N/A",
             cpu: "N/A",
             uptime: "N/A",
@@ -141,19 +146,19 @@ export const getPM2StatusCore = async (
 
           return {
             success: true,
-            message: `Retrieved status for [${packageName}]`,
+            message: `Retrieved status for [${mcpName}]`,
             data: status,
           };
         }
 
         return {
           success: false,
-          message: `[${packageName}] Process not found`,
+          message: `[${mcpName}] Process not found`,
         };
       }
 
       const status: MCPStatus = {
-        name: packageName,
+        name: mcpName,
         pid: process.pid,
         status: process.pm2_env?.status || "unknown",
         memory: process.monit?.memory
@@ -167,7 +172,7 @@ export const getPM2StatusCore = async (
 
       return {
         success: true,
-        message: `Retrieved status for [${packageName}]`,
+        message: `Retrieved status for [${mcpName}]`,
         data: status,
       };
     }

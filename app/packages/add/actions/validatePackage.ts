@@ -1,5 +1,5 @@
 type DetectRepoResult = {
-  packageName: string;
+  mcpName: string;
   isValid: boolean;
   packageUrl: string;
   isInstalled: boolean;
@@ -10,38 +10,38 @@ import { join } from "path";
 import { existsSync } from "node:fs";
 
 export const validatePackage = async (
-  packageName: string
+  mcpName: string
 ): Promise<DetectRepoResult> => {
   // Initialize result object
   const result: DetectRepoResult = {
-    packageName,
+    mcpName,
     isValid: false,
     packageUrl: "",
     isInstalled: false,
-    alias: packageName,
+    alias: mcpName,
   };
 
-  // Validate package name format (user/repo)
-  const parts = packageName.split("/");
+  // Validate MCP Name format (user/repo)
+  const parts = mcpName.split("/");
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
     return result;
   }
 
   // Set package URL
-  const packageUrl = `https://github.com/${packageName}.git`;
+  const packageUrl = `https://github.com/${mcpName}.git`;
   result.packageUrl = packageUrl;
 
   // Check if repository exists on GitHub
-  result.isValid = await checkGitHubRepoExists(packageName);
+  result.isValid = await checkGitHubRepoExists(mcpName);
 
   // Check if package is already installed
   const basePath = process.env.BASE_PATH;
   if (basePath) {
-    const packagePath = join(basePath, ".furikake/installed", packageName);
+    const packagePath = join(basePath, ".furikake/installed", mcpName);
     result.isInstalled = existsSync(packagePath);
 
     // Get the alias from the configuration file
-    const configPath = join(basePath, "configuration.json");
+    const configPath = join(basePath, ".furikake/configuration.json");
     const configFile = Bun.file(configPath);
     const configExists = await configFile.exists();
     if (configExists) {
@@ -72,9 +72,9 @@ export const validatePackage = async (
  * Checks if a GitHub repository exists by making a request to the GitHub API
  * Using Bun's native fetch API
  */
-async function checkGitHubRepoExists(packageName: string): Promise<boolean> {
+async function checkGitHubRepoExists(mcpName: string): Promise<boolean> {
   try {
-    const [owner, repo] = packageName.split("/");
+    const [owner, repo] = mcpName.split("/");
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
 
     const response = await fetch(apiUrl, {

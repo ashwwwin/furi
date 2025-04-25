@@ -7,7 +7,7 @@ type DeletePackageResult = {
 };
 
 export const deletePackage = async (
-  packageName: string
+  mcpName: string
 ): Promise<DeletePackageResult> => {
   try {
     const basePath = process.env.BASE_PATH;
@@ -42,24 +42,39 @@ export const deletePackage = async (
       }
     }
 
-    if (!config[packageName]) {
-      return {
-        success: false,
-        message: `Package '${packageName}' not found in configuration.`,
-      };
+    if (!config[mcpName]) {
+      // If no package is found, check one more edgecase
+      // If the <author/repo> is installed, but the MCP Name is not
+      if (mcpName.split("/").length === 2) {
+        console.log("Not found in configuration");
+      } else {
+        return {
+          success: false,
+          message: `Not found in configuration`,
+        };
+      }
     }
 
-    const packageSourcePath = config[packageName].source;
+    let packageSourcePath;
+
+    if (config[mcpName]?.source) {
+      packageSourcePath = config[mcpName].source;
+    }
+
+    if (mcpName.split("/").length === 2) {
+      packageSourcePath = join(basePath, ".furikake/installed", mcpName);
+    }
+
     if (!packageSourcePath) {
       return {
         success: false,
-        message: `Package '${packageName}' found in configuration but is missing the 'source' path.`,
+        message: `${mcpName}' found in configuration but is missing the 'source' path`,
       };
     }
 
     const packageSourceDirExists = existsSync(packageSourcePath);
 
-    delete config[packageName];
+    delete config[mcpName];
 
     try {
       await Bun.write(configPath, JSON.stringify(config, null, 2));
@@ -86,7 +101,7 @@ export const deletePackage = async (
 
     return {
       success: true,
-      message: `Removed '${packageName}'`,
+      message: `Removed '${mcpName}'`,
     };
   } catch (error) {
     return {

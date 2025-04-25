@@ -42,8 +42,13 @@ export const renameMCP = async (currentName: string, newName: string) => {
   spinner.start();
 
   try {
+    const basePath = process.env.BASE_PATH || "";
+    if (!basePath) {
+      throw new Error("BASE_PATH environment variable is not set");
+    }
+
     // Read the configuration.json file
-    const configPath = join(process.cwd(), ".furikake/configuration.json");
+    const configPath = join(basePath, ".furikake/configuration.json");
     let config;
 
     try {
