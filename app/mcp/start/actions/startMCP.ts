@@ -35,7 +35,7 @@ export const startMCPCore = async (
 
       if (missingEnvVars.length > 0) {
         console.warn(
-          `[${packageName}] Missing environment variables: ${missingEnvVars.join(
+          `\n[${packageName}] Missing environment variable(s): ${missingEnvVars.join(
             ", "
           )}`
         );

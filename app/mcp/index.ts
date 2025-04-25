@@ -3,4 +3,12 @@ import { startMCP } from "./start";
 import { stopMCP } from "./stop";
 import { renameMCP } from "./rename";
 import { restartMCP } from "./restart";
-export { getEnvironmentVariables, startMCP, stopMCP, renameMCP, restartMCP };
+import { statusMCP } from "./status";
+export {
+  getEnvironmentVariables,
+  startMCP,
+  stopMCP,
+  renameMCP,
+  restartMCP,
+  statusMCP,
+};

@@ -7,6 +7,7 @@ import {
   startMCP,
   renameMCP,
   restartMCP,
+  statusMCP,
 } from "./app/mcp";
 import { callTool, listTools } from "./app/tools";
 import { startHttpServer, stopHttpServer, restartHttpServer } from "./app/http";
@@ -79,6 +80,18 @@ program
   .argument("<packageName>", "Package name")
   .action((packageName) => {
     restartMCP(packageName);
+  });
+
+program
+  .command("status")
+  .description("Get the status of an MCP server")
+  .argument(
+    "[packageName]",
+    "Package name (defaults to 'all' to show all MCPs)",
+    "all"
+  )
+  .action((packageName) => {
+    statusMCP(packageName);
   });
 
 program

@@ -116,17 +116,19 @@ furi stop <mcp-name>
 furi restart <mcp-name>
 ```
 
-<!-- #### Check the status of an MCP
+#### Get the status of all ruuning MCPs
+
+This will show you the status of all running MCPs.
+
+```bash
+furi status
+```
+
+If you want to get the status of a specific MCP, you can use:
 
 ```bash
 furi status <mcp-name>
 ```
-
-#### List all running MCPs
-
-```bash
-furi status all
-``` -->
 
 ### Using the HTTP API
 
