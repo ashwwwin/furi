@@ -25,14 +25,16 @@ export const listTools = async (packageName: string) => {
     if (tools && tools.tools && tools.tools.length > 0) {
       console.log("\nTools:");
       tools.tools.forEach((tool: any, index: number) => {
-        console.log(`  \x1b[36m${index + 1}. ${tool.name}\x1b[0m`);
+        console.log(`     \x1b[36m${index + 1}. ${tool.name}\x1b[0m`);
         if (tool.description) {
-          console.log(`     ${tool.description}`);
+          console.log(
+            `          \x1b[2m\x1b[3m${tool.description}\x1b[0m\x1b[0m`
+          );
         }
 
         // Show input schema if available
         if (tool.inputSchema && tool.inputSchema.properties) {
-          console.log("     Parameters:");
+          console.log("          ➤ Input data:");
           const properties = tool.inputSchema.properties;
           Object.keys(properties).forEach((propName) => {
             const prop = properties[propName];
@@ -42,9 +44,9 @@ export const listTools = async (packageName: string) => {
                 ? "\x1b[31m(required)\x1b[0m"
                 : "(optional)";
             console.log(
-              `       - ${propName} ${required}: ${
+              `               \x1b[2m➤\x1b[0m ${propName} ${required}\n                    \x1b[2m${
                 prop.description || prop.type || ""
-              }`
+              }\x1b[0m`
             );
           });
         }
@@ -54,12 +56,12 @@ export const listTools = async (packageName: string) => {
       // Show example usage
       if (tools.tools.length > 0) {
         const exampleTool = tools.tools[0];
-        console.log("Example usage:");
+        console.log("     Example usage:");
         console.log(
-          `  \x1b[32mfuri call ${packageName} ${exampleTool.name} '{"param1":"value1","param2":"value2"}'\x1b[0m\n`
+          `     \x1b[32mfuri call ${packageName} ${exampleTool.name} '{"param1":"value1","param2":"value2"}'\x1b[0m\n`
         );
         console.log(
-          "  \x1b[2mNote: Parameters must be a valid JSON string enclosed in single quotes\x1b[0m"
+          "     \x1b[2mNote: Parameters must be a valid JSON string enclosed in single quotes\x1b[0m\n"
         );
       }
     } else {

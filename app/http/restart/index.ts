@@ -10,17 +10,17 @@ export const restartHttpServer = async () => {
 
     if (!serverRunning) {
       spinner.error({
-        text: "No server is running.\n     \x1b[2mStart the server with furi http start\x1b[0m",
+        text: "HTTP API server is not running\n     \x1b[2mStart the server with furi http start\x1b[0m",
       });
       return;
     }
 
     // Stop the server
-    spinner.update({ text: "Stopping HTTP API server..." });
+    spinner.update({ text: "Stopping HTTP API server" });
     await stopServer();
 
     // Start a new server
-    spinner.update({ text: "Starting HTTP API server..." });
+    spinner.update({ text: "Starting HTTP API server" });
     await createServer();
 
     spinner.success({

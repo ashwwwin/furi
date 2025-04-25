@@ -169,7 +169,6 @@ export const initializePackage = async (
               console.log(`Running build command: ${buildCommand}`);
               // Execute the command via sh
               await Bun.$`sh -c ${`cd ${packagePath} && ${buildCommand}`}`.quiet();
-              console.log(`Build completed successfully`);
               buildSuccessful = true;
             } catch (buildError) {
               console.warn(`Build failed: ${String(buildError)}`);
@@ -433,7 +432,7 @@ try {
 
     return {
       success: true,
-      message: `${packageName} initialized successfully`,
+      message: `${packageName} initialized`,
       runCommand: finalRunCommand,
     };
   } catch (error) {

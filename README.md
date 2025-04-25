@@ -90,18 +90,12 @@ You can get a list of all the tools available (with details) of any MCP by using
 furi tools <mcp-name>
 ```
 
-You can get the input data for a tool by using:
-
-```bash
-furi input <mcp-name> <tool-name>
-```
-
 then you can call the tool with:
 
 #### Call a tool
 
 ```bash
-furi call <mcp-name> <tool-name> <'{"input-name":"data"}'>
+furi call <mcp-name> <tool-name> <'{"param1":"value1", "param2":"value2"}'>
 ```
 
 #### Stop an MCP
