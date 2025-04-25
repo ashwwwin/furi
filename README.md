@@ -95,8 +95,10 @@ then you can call the tool with:
 #### Call a tool
 
 ```bash
-furi call <mcp-name> <tool-name> <'{"param1":"value1", "param2":"value2"}'>
+furi call <mcp-name> <tool-name> '{"param1":"value1", "param2":"value2"}'
 ```
+
+_Parameters must be a valid JSON string enclosed in single quotes_
 
 #### Stop an MCP
 
