@@ -101,7 +101,7 @@ then you can call the tool with:
 #### Call a tool
 
 ```bash
-furi call <mcp-name> <toolName> <'{"input-name":"data"}'>
+furi call <mcp-name> <tool-name> <'{"input-name":"data"}'>
 ```
 
 #### Stop an MCP
