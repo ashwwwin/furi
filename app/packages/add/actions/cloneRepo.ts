@@ -11,11 +11,11 @@ export const cloneRepo = async (
   packageUrl: string
 ): Promise<CloneRepoResult> => {
   try {
-    const targetDir = process.env.MCP_PATH;
+    const targetDir = process.env.BASE_PATH + ".furikake/installed";
     if (!targetDir) {
       return {
         success: false,
-        error: "MCP_PATH environment variable is not set",
+        error: "BASE_PATH environment variable is not set",
       };
     }
 

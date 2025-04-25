@@ -28,11 +28,11 @@ export const initializePackage = async (
   packageName: string
 ): Promise<PackageOutput> => {
   try {
-    const mcpPath = process.env.MCP_PATH;
-    if (!mcpPath) {
+    const basePath = process.env.BASE_PATH;
+    if (!basePath) {
       return {
         success: false,
-        message: "MCP_PATH environment variable is not set",
+        message: "BASE_PATH environment variable is not set",
       };
     }
 
@@ -47,7 +47,12 @@ export const initializePackage = async (
       };
     }
 
-    const packagePath = join(mcpPath as string, author, repo);
+    const packagePath = join(
+      basePath as string,
+      ".furikake/installed",
+      author,
+      repo
+    );
     const packageExists = existsSync(packagePath);
 
     if (!packageExists) {
@@ -389,7 +394,7 @@ try {
     }
 
     // Update configuration.json
-    const configPath = join(mcpPath as string, "configuration.json");
+    const configPath = join(basePath as string, "configuration.json");
     const configExists = existsSync(configPath);
     let config: Record<
       string,

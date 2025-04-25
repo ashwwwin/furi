@@ -493,7 +493,7 @@ async function scanFileForEnvVars(
 }
 
 export const getEnv = async (packageName: string) => {
-  const config = Bun.file(".installed/configuration.json");
+  const config = Bun.file(".furikake/configuration.json");
   const configJson = await config.json();
   return configJson[packageName];
 };

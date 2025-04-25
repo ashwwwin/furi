@@ -10,15 +10,15 @@ export const deletePackage = async (
   packageName: string
 ): Promise<DeletePackageResult> => {
   try {
-    const mcpPath = process.env.MCP_PATH;
-    if (!mcpPath) {
+    const basePath = process.env.BASE_PATH;
+    if (!basePath) {
       return {
         success: false,
-        message: "MCP_PATH environment variable is not set",
+        message: "BASE_PATH environment variable is not set",
       };
     }
 
-    const configPath = join(mcpPath, "configuration.json");
+    const configPath = join(basePath, ".furikake/configuration.json");
     const configFile = Bun.file(configPath);
     const configExists = await configFile.exists();
     let config: Record<

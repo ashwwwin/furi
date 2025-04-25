@@ -43,7 +43,7 @@ export const renameMCP = async (currentName: string, newName: string) => {
 
   try {
     // Read the configuration.json file
-    const configPath = join(process.cwd(), ".installed/configuration.json");
+    const configPath = join(process.cwd(), ".furikake/configuration.json");
     let config;
 
     try {
@@ -138,7 +138,8 @@ export const renameMCP = async (currentName: string, newName: string) => {
           // Get the process configuration
           const runCommand = config[newName].run || "npm run start";
           const [cmd, ...args] = runCommand.split(" ");
-          const cwd = config[newName].source || `.installed/${newName}`;
+          const cwd =
+            config[newName].source || `.furikake/installed/${newName}`;
 
           // Prepare environment variables
           const env: Record<string, string> = {};
@@ -169,11 +170,11 @@ export const renameMCP = async (currentName: string, newName: string) => {
                 cwd,
                 output: join(
                   process.cwd(),
-                  `.logs/${newName.replace("/", "-")}-out.log`
+                  `.furikake/logs/${newName.replace("/", "-")}-out.log`
                 ),
                 error: join(
                   process.cwd(),
-                  `.logs/${newName.replace("/", "-")}-error.log`
+                  `.furikake/logs/${newName.replace("/", "-")}-error.log`
                 ),
                 interpreter_args: cmd === "npm" ? [] : undefined,
                 env: env,

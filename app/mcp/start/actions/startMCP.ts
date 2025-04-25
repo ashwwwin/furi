@@ -10,7 +10,7 @@ export const startMCPCore = async (
   packageName: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    const configPath = join(process.cwd(), ".installed/configuration.json");
+    const configPath = join(process.cwd(), ".furikake/configuration.json");
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
     if (!config[packageName]) {
@@ -23,7 +23,8 @@ export const startMCPCore = async (
     const runCommand = config[packageName].run || "npm run start";
     const [cmd, ...args] = runCommand.split(" ");
 
-    const cwd = config[packageName].source || `.installed/${packageName}`;
+    const cwd =
+      config[packageName].source || `.furikake/installed/${packageName}`;
 
     let envVars: { variables: string[] } = { variables: [] };
     try {
@@ -82,11 +83,11 @@ export const startMCPCore = async (
           cwd,
           output: join(
             process.cwd(),
-            `.logs/${packageName.replace("/", "-")}-out.log`
+            `.furikake/logs/${packageName.replace("/", "-")}-out.log`
           ),
           error: join(
             process.cwd(),
-            `.logs/${packageName.replace("/", "-")}-error.log`
+            `.furikake/logs/${packageName.replace("/", "-")}-error.log`
           ),
           env: env,
           merge_logs: true,

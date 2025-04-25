@@ -35,13 +35,13 @@ export const validatePackage = async (
   result.isValid = await checkGitHubRepoExists(packageName);
 
   // Check if package is already installed
-  const mcpPath = process.env.MCP_PATH;
-  if (mcpPath) {
-    const packagePath = join(mcpPath, packageName);
+  const basePath = process.env.BASE_PATH;
+  if (basePath) {
+    const packagePath = join(basePath, ".furikake/installed", packageName);
     result.isInstalled = existsSync(packagePath);
 
     // Get the alias from the configuration file
-    const configPath = join(mcpPath, "configuration.json");
+    const configPath = join(basePath, "configuration.json");
     const configFile = Bun.file(configPath);
     const configExists = await configFile.exists();
     if (configExists) {

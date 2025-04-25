@@ -41,9 +41,9 @@ export const addPackage = async (packageName: string) => {
 
       if (input.trim().toLowerCase() !== "y") {
         // Delete the package directory if the build failed
-        const mcpPath = process.env.MCP_PATH;
-        if (mcpPath) {
-          const packagePath = join(mcpPath, packageName);
+        const basePath = process.env.BASE_PATH;
+        if (basePath) {
+          const packagePath = join(basePath, packageName);
           await Bun.$`rm -rf ${packagePath}`.quiet();
         }
 
@@ -55,7 +55,7 @@ export const addPackage = async (packageName: string) => {
       spinner.warn(`[${packageName}] Failed to build but downloaded`);
       console.log(
         `     \x1b[2mYou can edit the package in ${join(
-          process.env.MCP_PATH || "",
+          process.env.BASE_PATH + ".furikake/installed",
           packageName
         )}\x1b[0m`
       );

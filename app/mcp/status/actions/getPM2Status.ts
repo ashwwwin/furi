@@ -45,7 +45,7 @@ export const getPM2StatusCore = async (
   data?: MCPStatus[] | MCPStatus;
 }> => {
   try {
-    const configPath = join(process.cwd(), ".installed/configuration.json");
+    const configPath = join(process.cwd(), ".furikake/configuration.json");
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
     if (packageName !== "all" && !config[packageName]) {

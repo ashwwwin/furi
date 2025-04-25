@@ -105,10 +105,10 @@ export const getPackageConfig = (
   cmdArgs: string[];
 } => {
   const currentDir = process.cwd();
-  const configPath = join(currentDir, ".installed/configuration.json");
+  const configPath = join(currentDir, ".furikake/configuration.json");
   const config = JSON.parse(readFileSync(configPath, "utf-8"));
   const cwdRelative =
-    config[packageName]?.source || `.installed/${packageName}`;
+    config[packageName]?.source || `.furikake/installed/${packageName}`;
   const cwdAbsolute = join(currentDir, cwdRelative);
 
   // Prepare environment variables

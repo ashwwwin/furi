@@ -6,12 +6,12 @@ export const listPackages = async () => {
   spinner.start();
 
   try {
-    const mcpPath = process.env.MCP_PATH;
-    if (!mcpPath) {
-      return spinner.error("MCP_PATH environment variable is not set");
+    const basePath = process.env.BASE_PATH;
+    if (!basePath) {
+      return spinner.error("BASE_PATH environment variable is not set");
     }
 
-    const configPath = join(mcpPath, "configuration.json");
+    const configPath = join(basePath, ".furikake/configuration.json");
     const configFile = Bun.file(configPath);
 
     const exists = await configFile.exists();

@@ -130,5 +130,5 @@ dist
 .pnp.*
 
 # Installed MCPs
-.installed
-.installed/*
+.furikake
+.furikake/*

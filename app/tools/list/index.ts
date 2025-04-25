@@ -59,7 +59,7 @@ export const listTools = async (packageName: string) => {
           `     \x1b[32mfuri call ${packageName} ${exampleTool.name} '{"param1":"value1","param2":"value2"}'\x1b[0m\n`
         );
         console.log(
-          "     \x1b[2mNote: Parameters must be a valid JSON string enclosed in single quotes\x1b[0m\n"
+          "     \x1b[2mNote: Parameters must be a valid JSON string enclosed in single quotes\x1b[0m"
         );
       }
     } else {
