@@ -70,9 +70,7 @@ export const statusMCP = async (
         showDetails: true,
       });
 
-      console.log(
-        `\n\x1b[2mIf you want to see logs use: furi status <mcpName>\x1b[0m`
-      );
+      console.log(`\n\x1b[2mTo see logs use: furi status <mcpName>\x1b[0m`);
     } else if (result.data && !Array.isArray(result.data)) {
       spinner.success(`[${result.data.name}] found\n`);
       displaySingleStatus(result.data);
@@ -85,7 +83,7 @@ export const statusMCP = async (
       console.log(`\x1b[2m${logs}\x1b[0m`);
 
       console.log(
-        `\n\x1b[2mIf you want to see more lines use: furi status <mcpName> -l <lines>\x1b[0m`
+        `\n\x1b[2mTo see more lines use: furi status <mcpName> -l <lines>\x1b[0m`
       );
     }
   } catch (error) {

@@ -27,7 +27,7 @@ export const startHttpServer = async (port?: number, exposeSudo = true) => {
     await createServer();
 
     spinner.success({ text: "HTTP API server started" });
-    console.log(`\x1b[31mNotice: admin routes are exposed via HTTP\x1b[0m`);
+    console.log(`\x1b[31mNotice: Admin routes are exposed via HTTP\x1b[0m`);
   } catch (error: any) {
     spinner.error({
       text: `Failed to start HTTP API server: ${

@@ -18,9 +18,7 @@ export const listPackages = async (showDetails: boolean) => {
     });
 
     if (!showDetails) {
-      console.log(
-        "\n\x1b[2mIf you want to see server details use: furi status\x1b[0m"
-      );
+      console.log("\n\x1b[2mTo see server details use: furi status\x1b[0m");
     }
   } else {
     spinner.error("Failed to get MCPs");

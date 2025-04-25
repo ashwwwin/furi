@@ -28,7 +28,7 @@ curl -fsSL https://bun.sh/install | bash
 Then, install Furikake:
 
 ```bash
-Install script goes here
+curl -fsSL https://furikake.app/install | bash
 ```
 
 You should now be good to go!

@@ -13,8 +13,6 @@ export const addPackage = async (mcpName: string) => {
     spinner.start();
     const result = await validatePackage(mcpName);
 
-    console.log(result);
-
     if (result.isInstalled) {
       const basePath = process.env.BASE_PATH || "";
       if (!basePath) {
