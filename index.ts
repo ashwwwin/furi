@@ -128,7 +128,7 @@ program
   .description("Show the path to the .furikake directory")
   .action(() => {
     console.log(
-      `Furikake is stored in: \n     \x1b[2m${process.env.BASE_PATH}\x1b[0m`
+      `Furikake is stored in: \n     \x1b[2m${process.env.BASE_PATH}.furikake/\x1b[0m`
     );
   });
 
