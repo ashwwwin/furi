@@ -18,68 +18,75 @@ export const deletePackage = async (
       };
     }
 
-    // Validate package name format
-    const parts = packageName.split("/");
-    if (parts.length !== 2 || !parts[0] || !parts[1]) {
-      return {
-        success: false,
-        message: "Invalid package name format. Expected 'user/repo'",
-      };
-    }
-
-    // Get the package path
-    const packagePath = join(mcpPath, packageName);
-    const packageExists = existsSync(packagePath);
-
-    if (!packageExists) {
-      return {
-        success: false,
-        message: `not found\n     \x1b[2mTo view all installed repos, use: furi list\x1b[0m`,
-      };
-    }
-
-    // Remove the package from the configuration file
     const configPath = join(mcpPath, "configuration.json");
     const configFile = Bun.file(configPath);
     const configExists = await configFile.exists();
+    let config: Record<
+      string,
+      { run: string; source: string; env?: Record<string, string> }
+    > = {};
 
     if (configExists) {
       try {
         const configContent = await configFile.text();
         if (configContent.trim()) {
-          const config = JSON.parse(configContent);
-
-          // Remove the package from the configuration
-          if (config[packageName]) {
-            delete config[packageName];
-            await Bun.write(configPath, JSON.stringify(config, null, 2));
-          }
+          config = JSON.parse(configContent);
         }
       } catch (error) {
         return {
           success: false,
-          message: `Failed to update configuration: ${
+          message: `Failed to read or parse configuration: ${
             error instanceof Error ? error.message : String(error)
           }`,
         };
       }
     }
 
-    // Delete the package directory using the $ shell API
+    if (!config[packageName]) {
+      return {
+        success: false,
+        message: `Package '${packageName}' not found in configuration.`,
+      };
+    }
+
+    const packageSourcePath = config[packageName].source;
+    if (!packageSourcePath) {
+      return {
+        success: false,
+        message: `Package '${packageName}' found in configuration but is missing the 'source' path.`,
+      };
+    }
+
+    const packageSourceDirExists = existsSync(packageSourcePath);
+
+    delete config[packageName];
+
     try {
-      await Bun.$`rm -rf ${packagePath}`.quiet();
+      await Bun.write(configPath, JSON.stringify(config, null, 2));
     } catch (error) {
       return {
         success: false,
-        message: `Failed to delete package directory: ${
+        message: `Failed to write updated configuration: ${
           error instanceof Error ? error.message : String(error)
         }`,
       };
     }
 
+    if (packageSourceDirExists) {
+      try {
+        await Bun.$`rm -rf ${packageSourcePath}`.quiet();
+      } catch (error) {
+        console.warn(
+          `Failed to delete package directory '${packageSourcePath}': ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
+    }
+
     return {
       success: true,
-      message: `Package ${packageName} removed`,
+      message: `Removed '${packageName}'`,
     };
   } catch (error) {
     return {

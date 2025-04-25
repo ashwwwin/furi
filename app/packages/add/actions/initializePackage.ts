@@ -1,4 +1,4 @@
-import { join } from "path";
+import { join, relative, dirname } from "path";
 import {
   existsSync,
   readFileSync,
@@ -6,11 +6,20 @@ import {
   mkdirSync,
   readdirSync,
 } from "node:fs";
+import yaml from "js-yaml";
 
 type PackageOutput = {
   success: boolean;
   message: string;
   runCommand?: string;
+};
+
+// Define the structure expected in smithery.yaml
+type SmitheryConfig = {
+  commandFunction?: {
+    build?: string;
+    run?: string;
+  };
 };
 
 // The goal of this function is to initialize the package
@@ -48,6 +57,24 @@ export const initializePackage = async (
       };
     }
 
+    // Check if smithery.yaml exists
+    const smitheryPath = join(packagePath, "smithery.yaml");
+    const smitheryExists = existsSync(smitheryPath);
+    let smitheryConfig: SmitheryConfig = {};
+
+    if (smitheryExists) {
+      try {
+        const smitheryContent = readFileSync(smitheryPath, "utf-8");
+        smitheryConfig = yaml.load(smitheryContent) as SmitheryConfig;
+      } catch (yamlError) {
+        console.warn(
+          `Failed to parse smithery.yaml at ${smitheryPath}: ${
+            yamlError instanceof Error ? yamlError.message : String(yamlError)
+          }`
+        );
+      }
+    }
+
     // Check if package.json exists
     const packageJsonPath = join(packagePath, "package.json");
     const packageJsonExists = existsSync(packageJsonPath);
@@ -73,74 +100,84 @@ export const initializePackage = async (
 
     const scripts = packageJson.scripts || {};
 
-    // Check for build script options in order of preference
-    if (scripts.build) {
-      buildCommand = "build";
-    } else if (scripts.compile) {
-      buildCommand = "compile";
-    } else if (scripts.prepublish) {
-      buildCommand = "prepublish";
-    } else if (scripts.prepare) {
-      buildCommand = "prepare";
+    if (smitheryConfig.commandFunction?.build) {
+      buildCommand = smitheryConfig.commandFunction.build;
+    } else {
+      // Check for build script options in package.json if not in smithery.yaml
+      if (scripts.build) {
+        buildCommand = "npm run build";
+      } else if (scripts.compile) {
+        buildCommand = "npm run compile";
+      } else if (scripts.prepublish) {
+        buildCommand = "npm run prepublish";
+      } else if (scripts.prepare) {
+        buildCommand = "npm run prepare";
+      }
     }
 
-    // Determine run command based on available scripts
-    if (scripts.start) {
-      runCommand = "start";
-    } else if (scripts.dev) {
-      runCommand = "dev";
-    } else if (scripts.serve) {
-      runCommand = "serve";
+    if (smitheryConfig.commandFunction?.run) {
+      runCommand = smitheryConfig.commandFunction.run;
     } else {
-      // If no obvious run script, check for bin entry
-      if (packageJson.bin) {
-        const binEntry =
-          typeof packageJson.bin === "string"
-            ? packageJson.bin
-            : Object.values(packageJson.bin)[0];
+      // Determine run command based on available scripts in package.json if not in smithery.yaml
+      if (scripts.start) {
+        runCommand = "npm run start";
+      } else if (scripts.dev) {
+        runCommand = "npm run dev";
+      } else if (scripts.serve) {
+        runCommand = "npm run serve";
+      } else {
+        // If no obvious run script, check for bin entry
+        if (packageJson.bin) {
+          const binEntry =
+            typeof packageJson.bin === "string"
+              ? packageJson.bin
+              : Object.values(packageJson.bin)[0];
 
-        if (binEntry) {
-          // If the package has a binary, run that directly
-          runCommand = "node " + binEntry;
+          if (binEntry) {
+            // If the package has a binary, run that directly
+            // Ensure it's executed with node if it's a JS file, might need adjustment based on shebang or file type
+            runCommand = binEntry.endsWith(".js")
+              ? `node ${binEntry}`
+              : binEntry;
+          }
         }
       }
     }
+
+    let buildSuccessful = false;
 
     // Install dependencies but skip the build step
     try {
       // Install dependencies but skip scripts to avoid build issues
       await Bun.$`cd ${packagePath} && npm install --ignore-scripts`.quiet();
 
-      let buildSuccessful = false;
-
-      // First check if the package already has a dist/ or lib/ directory with compiled JS
+      // Check if the package already has a dist/ or lib/ directory with compiled JS
       const hasDistDir = existsSync(join(packagePath, "dist"));
       const hasLibDir = existsSync(join(packagePath, "lib"));
+      const hasOutDir = existsSync(join(packagePath, "out"));
 
-      if (hasDistDir || hasLibDir) {
-        // console.log(`Package already has compiled JavaScript files`);
+      if (hasDistDir || hasLibDir || hasOutDir) {
         buildSuccessful = true;
       } else {
         // Check if we need to run a build
         const needsBuild = hasTsConfig || buildCommand;
 
         if (needsBuild) {
-          // Let's first try the normal build process
+          // Let's first try the specified build command (from smithery or package.json)
           if (buildCommand) {
             try {
-              //   console.log(`Running build command: npm run ${buildCommand}`);
-              await Bun.$`cd ${packagePath} && npm run ${buildCommand}`.quiet();
-              //   console.log(`Build completed successfully`);
+              console.log(`Running build command: ${buildCommand}`);
+              // Execute the command via sh
+              await Bun.$`sh -c ${`cd ${packagePath} && ${buildCommand}`}`.quiet();
+              console.log(`Build completed successfully`);
               buildSuccessful = true;
             } catch (buildError) {
-              //   console.warn(`Build failed: ${String(buildError)}`);
+              console.warn(`Build failed: ${String(buildError)}`);
             }
           }
 
           // If build failed or there was no build command but we have TypeScript
           if (!buildSuccessful && hasTsConfig) {
-            // console.log(`Attempting to handle TypeScript files manually`);
-
             // Check for TypeScript files in various locations
             const entryPoints = [
               {
@@ -165,7 +202,6 @@ export const initializePackage = async (
             for (const entry of entryPoints) {
               if (existsSync(entry.path)) {
                 foundTsFile = entry;
-                // console.log(`Found TypeScript entry point at ${entry.path}`);
                 break;
               }
             }
@@ -175,7 +211,6 @@ export const initializePackage = async (
               const distDir = join(packagePath, "dist");
               if (!existsSync(distDir)) {
                 mkdirSync(distDir, { recursive: true });
-                // console.log(`Created dist directory`);
               }
 
               // Create the appropriate wrapper based on module type
@@ -227,6 +262,7 @@ init().catch(err => {
               } else {
                 // CommonJS wrapper
                 const cjsWrapper = `
+// This is an automatically generated CommonJS wrapper for TypeScript files
 try {
   require('ts-node/register');
   module.exports = require('${foundTsFile.relativePath}');
@@ -238,40 +274,24 @@ try {
                 writeFileSync(join(distDir, "index.js"), cjsWrapper, "utf-8");
               }
 
-              //   console.log(
-              //     `Created ${
-              //       isEsm ? "ESM" : "CommonJS"
-              //     } wrapper for TypeScript entry point at ${foundTsFile.path}`
-              //   );
-
               // Add ts-node as a dependency
               try {
                 await Bun.$`cd ${packagePath} && npm install --save-dev ts-node typescript @swc/core`.quiet();
-                // console.log(
-                //   `Installed ts-node and dependencies for runtime TypeScript support`
-                // );
                 buildSuccessful = true;
               } catch (installError) {
-                // console.warn(
-                //   `Failed to install ts-node: ${String(installError)}`
-                // );
+                console.warn(
+                  `Failed to install ts-node: ${String(installError)}`
+                );
               }
             } else {
-              //   console.warn(`Could not find TypeScript entry point`);
+              console.warn(`Could not find TypeScript entry point`);
             }
           }
         } else {
           // If the package doesn't have TypeScript or a build command, just mark as successful
-          //   console.log(`Package doesn't require building`);
           buildSuccessful = true;
         }
       }
-
-      //   console.log(
-      //     `Package setup completed${
-      //       buildSuccessful ? " successfully" : " with warnings"
-      //     }`
-      //   );
     } catch (error) {
       return {
         success: false,
@@ -281,16 +301,101 @@ try {
       };
     }
 
-    // Format the final run command
-    const finalRunCommand = runCommand.startsWith("node ")
-      ? runCommand
-      : `npm run ${runCommand}`;
+    // Determine the final run command, potentially overriding based on build output
+    let finalRunCommand = runCommand;
+
+    // If a build was successful and the run command seems to use a source runner
+    const sourceRunners = ["ts-node", "tsx"];
+
+    // Check if the run command executes a script that uses a source runner
+    let runScriptContent = "";
+    if (runCommand && runCommand.startsWith("npm run ")) {
+      const scriptName = runCommand.substring(8);
+      if (packageJson.scripts && packageJson.scripts[scriptName]) {
+        runScriptContent = packageJson.scripts[scriptName];
+      }
+    }
+
+    if (
+      buildSuccessful &&
+      runCommand &&
+      runScriptContent &&
+      sourceRunners.some((runner) => runScriptContent.includes(runner))
+    ) {
+      const buildOutputDirs = ["dist", "lib"];
+      let foundBuiltEntry = null;
+
+      // Try to infer the entry point from the *script content*
+      const scriptArgs = runScriptContent.split(" ");
+      let sourceEntryPoint = scriptArgs.find(
+        (arg) => arg.endsWith(".ts") || arg.endsWith(".tsx")
+      );
+
+      if (sourceEntryPoint) {
+        sourceEntryPoint = sourceEntryPoint.replace(/^\.\//, "");
+
+        for (const dir of buildOutputDirs) {
+          // Construct potential paths based on source entry point
+          const jsEntryPoint = sourceEntryPoint.replace(/\.(ts|tsx)$/, ".js");
+          const jsEntryPointNoSrc = sourceEntryPoint
+            .replace(/^src\//, "")
+            .replace(/\.(ts|tsx)$/, ".js");
+          const jsIndexEntryPoint = join(
+            dirname(sourceEntryPoint.replace(/^src\//, "")),
+            "index.js"
+          );
+
+          const potentialBuiltPath = join(packagePath, dir, jsEntryPoint);
+          if (existsSync(potentialBuiltPath)) {
+            foundBuiltEntry = potentialBuiltPath;
+            break;
+          }
+
+          const potentialBuiltPathNoSrc = join(
+            packagePath,
+            dir,
+            jsEntryPointNoSrc
+          );
+          if (existsSync(potentialBuiltPathNoSrc)) {
+            foundBuiltEntry = potentialBuiltPathNoSrc;
+            break;
+          }
+
+          const potentialBuiltPathIndex = join(
+            packagePath,
+            dir,
+            jsIndexEntryPoint
+          );
+          if (existsSync(potentialBuiltPathIndex)) {
+            foundBuiltEntry = potentialBuiltPathIndex;
+            break;
+          }
+        }
+      } else {
+        console.warn(
+          `Could not infer source entry point from script: ${runScriptContent}`
+        );
+      }
+
+      if (foundBuiltEntry) {
+        // Construct the node command relative to the package path if possible,
+        // otherwise use absolute path.
+        const relativeBuiltPath = relative(packagePath, foundBuiltEntry);
+        finalRunCommand = `node ${relativeBuiltPath}`;
+      } else {
+        console.warn(
+          `Build successful, but couldn't find corresponding built file for source entry point: ${sourceEntryPoint}. Using original run command: ${runCommand}`
+        );
+      }
+    }
 
     // Update configuration.json
     const configPath = join(mcpPath as string, "configuration.json");
     const configExists = existsSync(configPath);
-
-    let config: Record<string, { run: string; source: string }> = {};
+    let config: Record<
+      string,
+      { run: string; source: string; env?: Record<string, string> }
+    > = {};
 
     try {
       if (configExists) {

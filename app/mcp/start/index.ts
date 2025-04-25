@@ -9,11 +9,9 @@ export const startMCP = async (packageName: string) => {
   spinner.start();
 
   try {
-    // Read the configuration.json file
     const configPath = join(process.cwd(), ".installed/configuration.json");
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
-    // Get the run command for the package
     if (!config[packageName]) {
       spinner.error(`[${packageName}] Configuration not found`);
       return;
@@ -22,15 +20,12 @@ export const startMCP = async (packageName: string) => {
     const runCommand = config[packageName].run || "npm run start";
     const [cmd, ...args] = runCommand.split(" ");
 
-    // Use the source directory from config if available, otherwise fall back to default
     const cwd = config[packageName].source || `.installed/${packageName}`;
 
-    // Scan for environment variables
     let envVars: { variables: string[] } = { variables: [] };
     try {
       envVars = await scanEnvVars(packageName);
 
-      // Check if environment variables are defined in config
       const missingEnvVars = envVars.variables.filter((varName) => {
         return !config[packageName]?.env || !config[packageName].env[varName];
       });
@@ -52,18 +47,14 @@ export const startMCP = async (packageName: string) => {
       spinner.start(`[${packageName}] Continuing startup...`);
     }
 
-    // Prepare environment variables (only include defined values)
     const env: Record<string, string> = {};
 
-    // Add relevant environment variables from process.env
     if (process.env.PATH) env.PATH = process.env.PATH;
     if (process.env.NODE_ENV) env.NODE_ENV = process.env.NODE_ENV;
     if (process.env.HOME) env.HOME = process.env.HOME;
     if (process.env.USER) env.USER = process.env.USER;
 
-    // Add package-specific environment variables
     if (config[packageName]?.env) {
-      // Only include non-undefined values
       for (const [key, value] of Object.entries(config[packageName].env)) {
         if (value !== undefined && value !== null) {
           env[key] = String(value);
@@ -71,7 +62,6 @@ export const startMCP = async (packageName: string) => {
       }
     }
 
-    // Connect to PM2
     await new Promise<void>((resolve, reject) => {
       pm2.connect((err) => {
         if (err) {
@@ -82,12 +72,11 @@ export const startMCP = async (packageName: string) => {
       });
     });
 
-    // Start the process with PM2
     await new Promise<void>((resolve, reject) => {
       pm2.start(
         {
           script: cmd,
-          args: args.join(" "),
+          args: args,
           name: `furi_${packageName.replace("/", "-")}`,
           cwd,
           output: join(
@@ -98,10 +87,9 @@ export const startMCP = async (packageName: string) => {
             process.cwd(),
             `.logs/${packageName.replace("/", "-")}-error.log`
           ),
-          interpreter_args: cmd === "npm" ? [] : undefined,
-          env: env, // Pass the environment variables
-          merge_logs: true, // Merge logs to reduce clutter
-          log_date_format: "YYYY-MM-DD HH:mm:ss Z", // Add timestamps to logs
+          env: env,
+          merge_logs: true,
+          log_date_format: "YYYY-MM-DD HH:mm:ss Z",
         },
         (err) => {
           if (err) {
@@ -119,7 +107,6 @@ export const startMCP = async (packageName: string) => {
       `[${packageName}] Failed to start: ${error.message || String(error)}`
     );
   } finally {
-    // Always disconnect from PM2 to allow the process to exit
     pm2.disconnect();
   }
 };
