@@ -9,10 +9,11 @@ console.log(`Starting Furi HTTP API server on port ${PORT}...`);
 // If you want to expose the server to the public, set this to false
 // This will allow anyone to start/stop and mcp.
 
-// These routes will not be exposed if this is false:
+// These are the SUDO routes:
 // /<author>/<repo>/add (install a new MCP from a github repo)
 // /<mcpName>/remove (delete an MCP by <mcpName>)
 // /<mcpName>/start (start an MCP)
+// /<mcpName>/logs
 //  /<mcpName>/stop (stop an MCP)
 //  /<mcpName>/restart (restart an MCP)
 //  /<mcpName>/status (get detailed status of an MCP)
@@ -20,6 +21,11 @@ console.log(`Starting Furi HTTP API server on port ${PORT}...`);
 //  /stop (stop the HTTP API server)
 //  /restart (restart the HTTP API server)
 // These are all JSON responses.
+
+// These are the PUBLIC routes:
+// /list (get a list of all online MCPs)
+// /<mcpName>/call/<toolName> (post as a JSON body)
+// /<mcpName>/tools (get a list of tools for an MCP)
 
 const server = Bun.serve({
   port: PORT,
