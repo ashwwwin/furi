@@ -51,10 +51,30 @@ export const validatePackage = async (
           const config = JSON.parse(configContent);
 
           // Find which parent key has source: packagePath
+          // Check root level first
           for (const key in config) {
-            if (config[key] && config[key].source === packagePath) {
+            const potentialPackageConfig = config[key];
+            // Check if the value is an object and has the expected 'source' property that matches the target path
+            if (
+              potentialPackageConfig &&
+              typeof potentialPackageConfig === "object" &&
+              potentialPackageConfig.source === packagePath
+            ) {
               result.alias = key;
-              break;
+              break; // Found in root
+            }
+          }
+
+          // If not found in root, check installed section
+          if (result.alias === mcpName && config.installed) {
+            for (const key in config.installed) {
+              if (
+                config.installed[key] &&
+                config.installed[key].source === packagePath
+              ) {
+                result.alias = key;
+                break; // Found in installed
+              }
             }
           }
         }

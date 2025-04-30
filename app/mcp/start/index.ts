@@ -9,6 +9,7 @@ import chalk from "chalk";
 export const startMCP = async (mcpName: string) => {
   let config: any;
   let initialEnv: Record<string, string> = {};
+  let mcpConfig: any;
 
   try {
     const basePath = process.env.BASE_PATH || "";
@@ -18,7 +19,11 @@ export const startMCP = async (mcpName: string) => {
     const configPath = join(basePath, ".furikake/configuration.json");
     config = JSON.parse(readFileSync(configPath, "utf-8"));
 
-    if (!config[mcpName]) {
+    // Check both root level and installed section for MCP configuration
+    mcpConfig =
+      config[mcpName] || (config.installed && config.installed[mcpName]);
+
+    if (!mcpConfig) {
       console.error(chalk.red(`[${mcpName}] Configuration not found`));
       return;
     }
@@ -28,8 +33,8 @@ export const startMCP = async (mcpName: string) => {
     if (process.env.HOME) initialEnv.HOME = process.env.HOME;
     if (process.env.USER) initialEnv.USER = process.env.USER;
 
-    if (config[mcpName]?.env) {
-      for (const [key, value] of Object.entries(config[mcpName].env)) {
+    if (mcpConfig?.env) {
+      for (const [key, value] of Object.entries(mcpConfig.env)) {
         if (value !== undefined && value !== null) {
           initialEnv[key] = String(value);
         }
@@ -90,10 +95,11 @@ export const startMCP = async (mcpName: string) => {
                 chalk.dim(`  Enter value for ${chalk.bold(varName)}: `)
               );
               initialEnv[varName] = value;
-              if (!config[mcpName].env) {
-                config[mcpName].env = {};
+              // Ensure env exists before assigning
+              if (!mcpConfig.env) {
+                mcpConfig.env = {};
               }
-              config[mcpName].env[varName] = value;
+              mcpConfig.env[varName] = value;
             }
             console.log(
               chalk.green(

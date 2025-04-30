@@ -44,7 +44,13 @@ export const getProcStatus = async (
     const configPath = join(basePath, ".furikake/configuration.json");
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
-    if (mcpName !== "all" && !config[mcpName]) {
+    // Check if specific MCP exists in either root or installed section
+    const mcpExists =
+      mcpName === "all" ||
+      config[mcpName] !== undefined ||
+      (config.installed && config.installed[mcpName] !== undefined);
+
+    if (!mcpExists) {
       return {
         success: false,
         message: `[${mcpName}] Configuration not found`,
@@ -94,9 +100,19 @@ export const getProcStatus = async (
         });
 
       // Get all installed MCPs from configuration
-      const allMCPs = Object.keys(config).map((configName) => {
+      const allMCPs = [];
+
+      // Check root level packages (for backward compatibility)
+      // Identify packages by checking if the value is an object and has a 'run' command
+      const rootPackages = Object.keys(config).filter(
+        (key) =>
+          typeof config[key] === "object" &&
+          config[key] !== null && // Ensure it's not null
+          config[key].source
+      );
+
+      for (const configName of rootPackages) {
         // Find the matching process by comparing the last part of the config name
-        // To handle cases like "arjunkmrm/perplexity-search" vs "perplexity" (for example)
         const configBaseName = configName.split("/").pop() || configName;
         const simplifiedConfigName = configBaseName
           .replace(/-/g, "")
@@ -112,22 +128,60 @@ export const getProcStatus = async (
         });
 
         if (process) {
-          return {
+          allMCPs.push({
             ...process,
             name: configName, // Use the config name for display
-          };
+          });
         } else {
           // No matching process found, show as offline
-          return {
+          allMCPs.push({
             name: configName,
             pid: "N/A",
             status: "offline",
             memory: "N/A",
             cpu: "N/A",
             uptime: "N/A",
-          };
+          });
         }
-      });
+      }
+
+      // Check installed packages
+      if (config.installed) {
+        for (const configName of Object.keys(config.installed)) {
+          // Skip if already processed from root level
+          if (rootPackages.includes(configName)) continue;
+
+          // Find the matching process
+          const configBaseName = configName.split("/").pop() || configName;
+          const simplifiedConfigName = configBaseName
+            .replace(/-/g, "")
+            .toLowerCase();
+
+          const process = runningProcesses.find((p) => {
+            const simplifiedProcName = p.name.replace(/-/g, "").toLowerCase();
+            return (
+              simplifiedProcName.includes(simplifiedConfigName) ||
+              simplifiedConfigName.includes(simplifiedProcName)
+            );
+          });
+
+          if (process) {
+            allMCPs.push({
+              ...process,
+              name: configName,
+            });
+          } else {
+            allMCPs.push({
+              name: configName,
+              pid: "N/A",
+              status: "offline",
+              memory: "N/A",
+              cpu: "N/A",
+              uptime: "N/A",
+            });
+          }
+        }
+      }
 
       return {
         success: true,
@@ -161,7 +215,10 @@ export const getProcStatus = async (
 
       if (!process) {
         // If the process is not found in PM2 but exists in config, show it as offline
-        if (config[mcpName]) {
+        if (
+          config[mcpName] ||
+          (config.installed && config.installed[mcpName])
+        ) {
           const status: MCPStatus = {
             name: mcpName,
             pid: "N/A",

@@ -493,5 +493,9 @@ async function scanFileForEnvVars(
 export const getEnv = async (mcpName: string) => {
   const config = Bun.file(".furikake/configuration.json");
   const configJson = await config.json();
-  return configJson[mcpName];
+
+  return (
+    configJson[mcpName] ||
+    (configJson.installed && configJson.installed[mcpName])
+  );
 };

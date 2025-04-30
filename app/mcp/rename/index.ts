@@ -63,15 +63,22 @@ export const renameMCP = async (currentName: string, newName: string) => {
       return;
     }
 
-    // Check if the current name exists
-    if (!config[currentName]) {
-      spinner.error(`\x1b[2m${currentName}\x1b[0m not found in configuration.
-     \x1b[2mTo view all installed repos, use: furi list\x1b[0m`);
+    // Check if the current name exists in root or installed
+    const currentConfigLocation = config[currentName]
+      ? "root"
+      : config.installed && config.installed[currentName]
+      ? "installed"
+      : null;
+
+    if (!currentConfigLocation) {
+      spinner.error(
+        `\x1b[2m${currentName}\x1b[0m not found in configuration.\n     \x1b[2mTo view all installed repos, use: furi list\x1b[0m`
+      );
       return;
     }
 
-    // Check if the new name already exists
-    if (config[newName]) {
+    // Check if the new name already exists in root or installed
+    if (config[newName] || (config.installed && config.installed[newName])) {
       spinner.error(`\x1b[2m${newName}\x1b[0m already exists in configuration`);
       return;
     }
@@ -122,11 +129,21 @@ export const renameMCP = async (currentName: string, newName: string) => {
       pm2.disconnect();
     }
 
-    // Create new entry with same config but different key
-    config[newName] = { ...config[currentName] };
+    // Get the actual config object for the current name
+    const currentMcpConfig =
+      currentConfigLocation === "root"
+        ? config[currentName]
+        : config.installed[currentName];
 
-    // Delete the old entry
-    delete config[currentName];
+    // Create new entry with same config but different key in the appropriate location
+    if (currentConfigLocation === "root") {
+      config[newName] = { ...currentMcpConfig };
+      delete config[currentName];
+    } else {
+      if (!config.installed) config.installed = {}; // Should exist, but safety check
+      config.installed[newName] = { ...currentMcpConfig };
+      delete config.installed[currentName];
+    }
 
     // Write the updated configuration back to file
     try {
@@ -140,11 +157,15 @@ export const renameMCP = async (currentName: string, newName: string) => {
         spinner.start(`Restarting process with new name "${newName}"`);
 
         try {
-          // Get the process configuration
-          const runCommand = config[newName].run || "npm run start";
+          // Get the process configuration from the new location
+          const newMcpConfig =
+            currentConfigLocation === "root"
+              ? config[newName]
+              : config.installed[newName];
+
+          const runCommand = newMcpConfig.run || "npm run start";
           const [cmd, ...args] = runCommand.split(" ");
-          const cwd =
-            config[newName].source || `.furikake/installed/${newName}`;
+          const cwd = newMcpConfig.source || `.furikake/installed/${newName}`;
 
           // Prepare environment variables
           const env: Record<string, string> = {};
@@ -154,8 +175,8 @@ export const renameMCP = async (currentName: string, newName: string) => {
           if (process.env.USER) env.USER = process.env.USER;
 
           // Add package-specific environment variables
-          if (config[newName]?.env) {
-            for (const [key, value] of Object.entries(config[newName].env)) {
+          if (newMcpConfig?.env) {
+            for (const [key, value] of Object.entries(newMcpConfig.env)) {
               if (value !== undefined && value !== null) {
                 env[key] = String(value);
               }

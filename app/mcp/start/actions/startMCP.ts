@@ -18,17 +18,21 @@ export const startMCPCore = async (
     const configPath = join(basePath, ".furikake/configuration.json");
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
-    if (!config[mcpName]) {
+    // Check both root level and installed section for MCP configuration
+    const mcpConfig =
+      config[mcpName] || (config.installed && config.installed[mcpName]);
+
+    if (!mcpConfig) {
       return {
         success: false,
         message: `[${mcpName}] Configuration not found`,
       };
     }
 
-    const runCommand = config[mcpName].run || "npm run start";
+    const runCommand = mcpConfig.run || "npm run start";
     const [cmd, ...args] = runCommand.split(" ");
 
-    const cwd = config[mcpName].source || `.furikake/installed/${mcpName}`;
+    const cwd = mcpConfig.source || `.furikake/installed/${mcpName}`;
 
     // Initialize environment variables
     const env: Record<string, string> = {};
@@ -38,8 +42,8 @@ export const startMCPCore = async (
     if (process.env.USER) env.USER = process.env.USER;
 
     // Add environment variables from configuration
-    if (config[mcpName]?.env) {
-      for (const [key, value] of Object.entries(config[mcpName].env)) {
+    if (mcpConfig?.env) {
+      for (const [key, value] of Object.entries(mcpConfig.env)) {
         if (value !== undefined && value !== null) {
           env[key] = String(value);
         }

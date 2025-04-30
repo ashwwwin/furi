@@ -114,8 +114,12 @@ export const getPackageConfig = (
 
   const configPath = join(basePath, ".furikake/configuration.json");
   const config = JSON.parse(readFileSync(configPath, "utf-8"));
-  const cwdRelative =
-    config[mcpName]?.source || `.furikake/installed/${mcpName}`;
+
+  // Check both root level and installed section for MCP configuration
+  const mcpConfig =
+    config[mcpName] || (config.installed && config.installed[mcpName]);
+
+  const cwdRelative = mcpConfig?.source || `.furikake/installed/${mcpName}`;
   const cwdAbsolute = join(basePath, cwdRelative);
 
   // Prepare environment variables
@@ -128,9 +132,9 @@ export const getPackageConfig = (
   if (process.env.USER) env.USER = process.env.USER;
 
   // Add package-specific environment variables
-  if (config[mcpName]?.env) {
+  if (mcpConfig?.env) {
     // Only include non-undefined values
-    for (const [key, value] of Object.entries(config[mcpName].env)) {
+    for (const [key, value] of Object.entries(mcpConfig.env)) {
       if (value !== undefined && value !== null) {
         env[key] = String(value);
       }
@@ -138,7 +142,7 @@ export const getPackageConfig = (
   }
 
   // Get the command and args from the config file
-  const configCmd = config[mcpName]?.run || "npm run start";
+  const configCmd = mcpConfig?.run || "npm run start";
   const [cmd, ...cmdArgs] = configCmd.split(" ");
 
   return { cwdAbsolute, env, cmd, cmdArgs };

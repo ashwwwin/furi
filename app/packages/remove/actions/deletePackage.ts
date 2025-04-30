@@ -23,7 +23,7 @@ export const deletePackage = async (
     const configExists = await configFile.exists();
     let config: Record<
       string,
-      { run: string; source: string; env?: Record<string, string> }
+      { run: string; source: string; env?: Record<string, string> } | any
     > = {};
 
     if (configExists) {
@@ -42,7 +42,12 @@ export const deletePackage = async (
       }
     }
 
-    if (!config[mcpName]) {
+    // Check both root level and installed section for MCP configuration
+    const mcpInRoot = config[mcpName] !== undefined;
+    const mcpInInstalled =
+      config.installed && config.installed[mcpName] !== undefined;
+
+    if (!mcpInRoot && !mcpInInstalled) {
       // If no package is found, check one more edgecase
       // If the <author/repo> is installed, but the MCP Name is not
       if (mcpName.split("/").length === 2) {
@@ -57,8 +62,10 @@ export const deletePackage = async (
 
     let packageSourcePath;
 
-    if (config[mcpName]?.source) {
+    if (mcpInRoot && config[mcpName]?.source) {
       packageSourcePath = config[mcpName].source;
+    } else if (mcpInInstalled && config.installed[mcpName]?.source) {
+      packageSourcePath = config.installed[mcpName].source;
     }
 
     if (mcpName.split("/").length === 2) {
@@ -74,7 +81,12 @@ export const deletePackage = async (
 
     const packageSourceDirExists = existsSync(packageSourcePath);
 
-    delete config[mcpName];
+    // Remove from appropriate location
+    if (mcpInRoot) {
+      delete config[mcpName];
+    } else if (mcpInInstalled) {
+      delete config.installed[mcpName];
+    }
 
     try {
       await Bun.write(configPath, JSON.stringify(config, null, 2));

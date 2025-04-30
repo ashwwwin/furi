@@ -25,16 +25,15 @@ export const toolsResponse = async () => {
 
     // Fetch tools using the action
     const toolsResult = await getTools(client);
-    result.push(
-      toolsResult.tools.map((tool: any) => {
-        return {
-          name: tool.name,
-          description: tool.description,
-          inputSchema: tool.inputSchema,
-          mcpName: mcp,
-        };
-      })
-    );
+
+    toolsResult.tools.map((tool: any) => {
+      result.push({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+        mcpName: mcp,
+      });
+    });
   }
 
   return new Response(JSON.stringify(result));

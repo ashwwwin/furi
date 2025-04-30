@@ -396,10 +396,7 @@ try {
     // Update configuration.json
     const configPath = join(basePath as string, ".furikake/configuration.json");
     const configExists = existsSync(configPath);
-    let config: Record<
-      string,
-      { run: string; source: string; env?: Record<string, string> }
-    > = {};
+    let config: Record<string, any> = {};
 
     try {
       if (configExists) {
@@ -420,7 +417,13 @@ try {
         }
       }
 
-      config[mcpName] = {
+      // Ensure installed property exists
+      if (!config.installed) {
+        config.installed = {};
+      }
+
+      // Add package to installed section
+      config.installed[mcpName] = {
         run: finalRunCommand,
         source: packagePath,
       };
