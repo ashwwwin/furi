@@ -1,5 +1,6 @@
 import { join } from "path";
 import { existsSync } from "node:fs";
+import { stopMCPCore } from "../../../mcp/stop/actions/stopMCP";
 
 type DeletePackageResult = {
   success: boolean;
@@ -59,6 +60,10 @@ export const deletePackage = async (
         };
       }
     }
+
+    try {
+      await stopMCPCore(mcpName);
+    } catch (stopError) {}
 
     let packageSourcePath;
 
