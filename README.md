@@ -135,7 +135,7 @@ furi status <mcpName>
 
 _to view more output lines, use `-l <lines>`_
 
-#### Finally
+#### Configuration storage
 
 All installed MCPs, your configuration and logs are stored in the `.furikake` directory which can be located by running:
 
@@ -143,7 +143,7 @@ All installed MCPs, your configuration and logs are stored in the `.furikake` di
 furi where
 ```
 
-### Using the HTTP API
+## Using the HTTP API
 
 - Any MCP that is running, will automatically have an http route.
 - Turning an MCP on/off can only be done via the cli.
