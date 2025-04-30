@@ -208,10 +208,10 @@ Get a list of all available tools for the defined MCP by running:
 
 ### Sudo routes:
 
-If you need sudo routes, you can toggle it with:
+If you need sudo routes, you can use start with the `sudo` flag:
 
 ```bash
-furi http sudo
+furi http start --sudo
 ```
 
 With sudo routes, you can actively manage packages and instances via the http api.

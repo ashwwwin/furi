@@ -138,9 +138,10 @@ httpCommand
   .command("start")
   .description("Start the HTTP API server")
   .option("-p, --port <port>", "Port number", "9339")
+  .option("--sudo", "Expose sudo routes", false)
   .action(async (options) => {
     const port = parseInt(options.port || "9339");
-    await startHttpServer(port);
+    await startHttpServer(port, options.sudo);
   });
 
 httpCommand

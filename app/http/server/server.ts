@@ -52,7 +52,7 @@ export const getServer = async () => {
   });
 };
 
-export const createServer = async (): Promise<any> => {
+export const createServer = async (exposeSudo = false): Promise<any> => {
   const isRunning = await isServerRunning();
 
   // If a server is already running, stop it first
@@ -79,6 +79,7 @@ export const createServer = async (): Promise<any> => {
           name: appName,
           env: {
             PORT: port.toString(),
+            EXPOSE_SUDO: exposeSudo.toString(),
           },
           exec_mode: "fork",
           watch: false,

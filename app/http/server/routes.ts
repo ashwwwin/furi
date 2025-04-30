@@ -17,11 +17,12 @@ console.log(`Starting Furi HTTP API server on port ${PORT}...`);
 
 // TODO: Improve error messages in the endpoints (MCP not found is vague) (All throughout the endpoints directory)
 
-// TODO: Sudo route visibility (pass in a flag)
 // If you want to expose the server to the public, set this to false
 // This will allow anyone to start/stop and mcp.
 
-const exposeSudoRoutes = true;
+const exposeSudoRoutes = process.env.EXPOSE_SUDO === "true";
+
+console.log(`Admin routes ${exposeSudoRoutes ? "enabled" : "disabled"}`);
 
 // These are the PUBLIC routes:
 // /list (get a list of all online MCPs)
