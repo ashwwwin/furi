@@ -172,7 +172,7 @@ furi http stop
 
 API Routes are divided into two types (public routes and sudo routes). You can access the public routes by default.
 
-#### Public Routes:
+### Public routes:
 
 To view all available MCPs, you can use:
 
@@ -188,8 +188,6 @@ To view all available tools for all MCPs that are online, you can use:
 /tools
 ```
 
-_List of tools are specific to online MCPs_
-
 To call a tool for a specific MCP, you can use:
 
 ```bash
@@ -202,13 +200,13 @@ This is the only route that uses a POST request, it can be used like this:
 curl -X POST http://localhost:9339/`mcpName`/call/`toolName` -d '{"param1":"value1", "param2":"value2"}'
 ```
 
+Get a list of all available tools for the defined MCP by running:
+
 ```bash
 /`mcpName`/tools
 ```
 
-Get a list of all available tools for the defined MCP
-
-##### Sudo Routes:
+### Sudo routes:
 
 If you need sudo routes, you can toggle it with:
 
