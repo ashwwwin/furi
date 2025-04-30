@@ -38,7 +38,7 @@ export const startHttpServer = async (port?: number, exposeSudo = false) => {
       console.log(`\x1b[31mNotice: Admin routes are exposed via HTTP\x1b[0m`);
     } else {
       console.log(
-        `HTTP API server running in public mode\n\x1b[2mNotice: No Admin routes are exposed via HTTP\x1b[0m`
+        `HTTP API server running\n\x1b[2mNotice: No Admin routes are exposed via HTTP\x1b[0m`
       );
     }
   } catch (error: any) {
