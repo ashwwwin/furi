@@ -174,7 +174,7 @@ API Routes are divided into two types (public routes and sudo routes). You can a
 
 #### ➤ Public routes
 
-To view all available MCPs, you can use:
+To view all running MCPs, you can use:
 
 ```bash
 /list
