@@ -172,7 +172,7 @@ furi http stop
 
 API Routes are divided into two types (public routes and sudo routes). You can access the public routes by default.
 
-#### ➤ Public routes
+#### Public routes
 
 To view all running MCPs, you can use:
 
@@ -206,7 +206,7 @@ Get a list of all available tools for the defined MCP by running:
 /`mcpName`/tools
 ```
 
-#### ➤ Sudo routes
+#### Sudo routes
 
 If you need sudo routes, you can use start with the `sudo` flag:
 
