@@ -39,7 +39,7 @@ furi help
 
 ## How to use
 
-#### Manage MCPs
+### Manage MCPs
 
 Furikake works with any public github repo as follows:
 
