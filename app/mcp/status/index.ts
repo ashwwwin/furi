@@ -1,43 +1,43 @@
 import { createSpinner } from "nanospinner";
-import { getPM2StatusCore } from "./actions/getPM2Status";
-import {
-  displayAllStatuses,
-  displaySingleStatus,
-} from "./actions/displayStatus";
+import { getProcStatus } from "./actions/getProcStatus";
+import { displayStatus } from "./actions/displayStatus";
 import fs from "fs";
 import path from "path";
 import os from "os";
+import { $ } from "bun";
 
 /**
  * Get PM2 logs for a specific MCP
  * @param mcpName Name of the MCP
- * @param lines Number of lines to show (default: 15)
+ * @param lines Number of lines to show
  */
-const getMCPLogs = (mcpName: string, lines: number = 15): string => {
+const getMCPLogs = async (
+  mcpName: string,
+  lines: number = 15
+): Promise<{ output: string; error: string }> => {
   try {
-    // First try to get custom log paths from PM2 process info
-    const { execSync } = require("child_process");
     const pmName = `furi_${mcpName}`;
     let customErrorLog = "";
     let customOutLog = "";
 
+    // Get log paths quietly
     try {
-      // Get process details from PM2 to check for custom log paths
-      const pmInfo = execSync(`pm2 show ${pmName}`).toString();
-      // Extract log paths from the output
-      const outLogMatch = pmInfo.match(/out log path\s*:\s*([^\n]+)/i);
-      const errLogMatch = pmInfo.match(/error log path\s*:\s*([^\n]+)/i);
+      const pm2Result = await $`pm2 show ${pmName}`.quiet();
+      if (pm2Result.exitCode === 0) {
+        const pmInfo = pm2Result.stdout.toString();
+        const outLogMatch = pmInfo.match(/out log path\s*:\s*([^\n]+)/i);
+        const errLogMatch = pmInfo.match(/error log path\s*:\s*([^\n]+)/i);
 
-      if (outLogMatch && outLogMatch[1]) {
-        customOutLog = outLogMatch[1].trim();
-      }
+        if (outLogMatch && outLogMatch[1]) {
+          customOutLog = outLogMatch[1].trim();
+        }
 
-      if (errLogMatch && errLogMatch[1]) {
-        customErrorLog = errLogMatch[1].trim();
+        if (errLogMatch && errLogMatch[1]) {
+          customErrorLog = errLogMatch[1].trim();
+        }
       }
     } catch (e) {
-      // Fallback silently if pm2 show fails
-      console.log(`Could not load ${pmName}`);
+      // Silent failure
     }
 
     const defaultLogsDir = path.join(os.homedir(), ".pm2", "logs");
@@ -47,45 +47,39 @@ const getMCPLogs = (mcpName: string, lines: number = 15): string => {
       "logs"
     );
 
-    // List of possible log paths to check in order
+    // Check these paths in order
     const possibleOutLogPaths = [
-      customOutLog,
       path.join(furikakeLogsDir, `${mcpName}-out.log`),
       path.join(defaultLogsDir, `${pmName}-out.log`),
     ].filter(Boolean);
 
     const possibleErrLogPaths = [
-      customErrorLog,
       path.join(furikakeLogsDir, `${mcpName}-error.log`),
       path.join(defaultLogsDir, `${pmName}-error.log`),
     ].filter(Boolean);
 
-    // If custom paths didn't work, try to find logs in the default PM2 directory
+    // Try alternative locations if needed
     if (
       !possibleOutLogPaths.some((p) => fs.existsSync(p)) &&
       !possibleErrLogPaths.some((p) => fs.existsSync(p))
     ) {
-      // Fallback to the original implementation
       const logsDir = path.join(os.homedir(), ".pm2", "logs");
       if (!fs.existsSync(logsDir)) {
-        return "PM2 logs directory not found";
+        return { output: "PM2 logs directory not found", error: "" };
       }
 
-      // List all files in the logs directory
       const dirFiles = fs.readdirSync(logsDir);
-
-      // Get possible name variations to match against
       const simpleName = mcpName.split("/").pop() || mcpName;
       const baseNameWithoutDash = simpleName.replace(/-/g, "");
 
-      // Pattern matching for various log file naming formats
+      // Various naming patterns to try
       const patterns = [
         `furi_${mcpName}-out`,
         `furi_${simpleName}-out`,
         `furi_${baseNameWithoutDash}-out`,
         `${mcpName}-out`,
         `${simpleName}-out`,
-        `${simpleName}-\\d+-out`, // For numbered format like perplexity-search-1-out-0.log
+        `${simpleName}-\\d+-out`,
       ];
 
       const errPatterns = [
@@ -94,14 +88,13 @@ const getMCPLogs = (mcpName: string, lines: number = 15): string => {
         `furi_${baseNameWithoutDash}-error`,
         `${mcpName}-error`,
         `${simpleName}-error`,
-        `${simpleName}-\\d+-error`, // For numbered format
+        `${simpleName}-\\d+-error`,
       ];
 
-      // Find matching log files using regex patterns
       let outLogFile = null;
       let errLogFile = null;
 
-      // Find stdout log file
+      // Find matching logs
       for (const pattern of patterns) {
         const regex = new RegExp(`^${pattern}`);
         const match = dirFiles.find((f) => regex.test(f));
@@ -112,7 +105,6 @@ const getMCPLogs = (mcpName: string, lines: number = 15): string => {
         }
       }
 
-      // Find stderr log file
       for (const pattern of errPatterns) {
         const regex = new RegExp(`^${pattern}`);
         const match = dirFiles.find((f) => regex.test(f));
@@ -123,7 +115,7 @@ const getMCPLogs = (mcpName: string, lines: number = 15): string => {
         }
       }
 
-      // Fallback: look for partial matches in filenames
+      // Try partial matches if needed
       if (!outLogFile) {
         const partialName = simpleName.toLowerCase().split("-")[0] || "";
         outLogFile = dirFiles.find(
@@ -145,47 +137,61 @@ const getMCPLogs = (mcpName: string, lines: number = 15): string => {
       }
     }
 
-    let logOutput = "";
+    let outputLogs = "";
+    let errorLogs = "";
 
-    // Get stdout logs from first existing log path
+    // Get stdout logs
     const outLogPath = possibleOutLogPaths.find((p) => fs.existsSync(p));
     if (outLogPath) {
       try {
-        const outLogs = execSync(`tail -n ${lines} "${outLogPath}"`).toString();
-        if (outLogs.trim()) {
-          logOutput += "➤ Output Logs \n" + outLogs + "\n";
-        } else {
-          logOutput += "\nNo logs found\n\n";
-        }
+        const rawLogs = await $`tail -n ${lines * 3} "${outLogPath}"`.text();
+
+        // Clean up the logs
+        outputLogs = rawLogs
+          .split("\n")
+          .filter((line) => {
+            return !(
+              line.includes("> ") ||
+              line.includes("npm ") ||
+              line.trim() === ""
+            );
+          })
+          .slice(-lines)
+          .join("\n");
       } catch (error) {
-        logOutput += `Error reading log: ${error}\n\n`;
+        outputLogs = `Error running tail command: ${error}`;
       }
     } else {
-      logOutput += "\nNo log file found\n\n";
+      outputLogs = "No output log file found";
     }
 
-    // Get stderr logs from first existing log path
+    // Get stderr logs
     const errLogPath = possibleErrLogPaths.find((p) => fs.existsSync(p));
     if (errLogPath) {
       try {
-        const errLogs = execSync(`tail -n ${lines} "${errLogPath}"`).toString();
-        if (errLogs.trim()) {
-          logOutput += "➤ Error Logs \n" + errLogs;
-        } else {
-          logOutput += "\nNo error logs found\n\n";
-        }
+        const rawLogs = await $`tail -n ${lines * 2} "${errLogPath}"`.text();
+
+        // Clean up the logs
+        errorLogs = rawLogs
+          .split("\n")
+          .filter((line) => line.trim() !== "")
+          .slice(-lines)
+          .join("\n");
       } catch (error) {
-        logOutput += `Error reading error log: ${error}`;
+        errorLogs = `Error running tail command for errors: ${error}`;
       }
     } else {
-      logOutput += "\nNo error log file found\n\n";
+      errorLogs = "No error log file found";
     }
 
-    return logOutput;
+    return { output: outputLogs, error: errorLogs };
   } catch (error) {
-    return `Error retrieving logs: ${
-      error instanceof Error ? error.message : String(error)
-    }`;
+    return {
+      output: "",
+      error: `Error retrieving logs: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    };
   }
 };
 
@@ -199,7 +205,7 @@ export const statusMCP = async (
   spinner.start();
 
   try {
-    const result = await getPM2StatusCore(mcpName);
+    const result = await getProcStatus(mcpName);
 
     if (!result.success) {
       spinner.error(result.message);
@@ -208,23 +214,83 @@ export const statusMCP = async (
 
     if (mcpName === "all" && Array.isArray(result.data)) {
       spinner.success(`${result.data.length} found\n`);
-      displayAllStatuses(result.data, {
+      displayStatus(result.data, {
         showDetails: true,
       });
 
-      console.log(`\x1b[2mTo see logs use: furi status <mcpName>\x1b[0m`);
+      console.log(`\n\x1b[2mTo see logs use: furi status <mcpName>\x1b[0m`);
     } else if (result.data && !Array.isArray(result.data)) {
       spinner.success(`[${result.data.name}] found\n`);
-      displaySingleStatus(result.data);
 
-      // Show logs for the single MCP
-      const lineCount = parseInt(lines, 10) || 15;
-      const logs = getMCPLogs(result.data.name, lineCount);
-      console.log(`\n\x1b[2m${logs}\x1b[0m`);
+      // Show basic status info
+      displayStatus(result.data);
 
-      console.log(
-        `\n\x1b[2mTo see more lines use: furi status <mcpName> -l <lines>\x1b[0m`
-      );
+      try {
+        const lineCount = parseInt(lines, 10) || 15;
+        const logs = await getMCPLogs(result.data.name, lineCount);
+
+        let logsFound = false;
+
+        // Show app logs if they contain meaningful content
+        if (logs.output.trim()) {
+          const meaningfulContent = logs.output.split("\n").some((line) => {
+            const match = line.match(
+              /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} [+-]\d{2}:\d{2}: (.*)$/
+            );
+            return (
+              (match &&
+                match[1] &&
+                match[1].trim() !== "" &&
+                !match[1].includes("> ")) ||
+              (!line.match(/^\d{4}-\d{2}-\d{2}/) && line.trim() !== "")
+            );
+          });
+
+          if (meaningfulContent) {
+            const filteredOutput = logs.output
+              .split("\n")
+              .filter((line) => {
+                return !(line.includes("> ") || line.trim() === "");
+              })
+              .join("\n");
+
+            if (filteredOutput.trim()) {
+              console.log(`\n\x1b[36mApp Logs\x1b[0m`);
+              console.log(`\x1b[2m${filteredOutput}\x1b[0m`);
+              logsFound = true;
+            }
+          }
+        }
+
+        // Show error/output logs
+        if (logs.error.trim()) {
+          const filteredError = logs.error
+            .split("\n")
+            .filter((line) => {
+              return (
+                line.trim() !== "" &&
+                !line.includes("Describing process with id")
+              );
+            })
+            .join("\n");
+
+          if (filteredError.trim()) {
+            console.log(`\n\x1b[36mOutput Logs\x1b[0m`);
+            console.log(`\x1b[2m${filteredError}\x1b[0m`);
+            logsFound = true;
+          }
+        }
+
+        if (!logsFound) {
+          console.log(`\n\x1b[33mNo logs found for this process.\x1b[0m`);
+        }
+
+        console.log(
+          `\n\x1b[2mTo see more lines use: furi status <mcpName> -l <lines>\x1b[0m`
+        );
+      } catch (err) {
+        console.log(`\n\x1b[33mError retrieving logs: ${err}\x1b[0m`);
+      }
     }
   } catch (error) {
     spinner.error(
@@ -234,3 +300,5 @@ export const statusMCP = async (
     );
   }
 };
+
+export { getMCPLogs };

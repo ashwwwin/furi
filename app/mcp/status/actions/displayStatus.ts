@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import type { MCPStatus } from "./getPM2Status";
+import type { MCPStatus } from "./getProcStatus";
 
 /**
  * Status color mapping
@@ -16,12 +16,37 @@ const statusColors: Record<string, (text: string) => string> = {
 /**
  * Display all MCP statuses in a table
  */
-export function displayAllStatuses(
-  statuses: MCPStatus[],
+export function displayStatus(
+  statuses: MCPStatus[] | MCPStatus,
   options?: { showDetails?: boolean }
 ): void {
-  if (statuses.length === 0) {
+  if (!statuses) {
     console.log(chalk.yellow("No MCP servers are installed"));
+  }
+
+  if (Array.isArray(statuses)) {
+    if (statuses.length === 0) {
+      console.log(chalk.yellow("No MCP servers are installed"));
+      return;
+    }
+  } else {
+    const statusColor =
+      statuses.status === "online"
+        ? chalk.green
+        : statuses.status === "offline" || statuses.status === "errored"
+        ? chalk.red
+        : statuses.status === "stopping" || statuses.status === "launching"
+        ? chalk.yellow
+        : chalk.gray;
+
+    console.log(
+      `${chalk.bold(
+        `${chalk.white(statuses.name)}`
+      )}                   (${statusColor(statuses.status)} / ${
+        statuses.memory
+      } / ${statuses.cpu} / ${statuses.uptime} / ${statuses.pid})`
+    );
+
     return;
   }
 
@@ -30,7 +55,6 @@ export function displayAllStatuses(
     console.log(
       chalk.dim("MCP name".padEnd(38)) +
         chalk.dim("Status".padEnd(12)) +
-        // chalk.dim("PID".padEnd(10)) +
         chalk.dim("Memory".padEnd(10)) +
         chalk.dim("CPU".padEnd(10)) +
         chalk.dim("Uptime".padEnd(12.5)) +
@@ -47,7 +71,6 @@ export function displayAllStatuses(
       console.log(
         chalk.white(status.name.padEnd(38)) +
           statusColor(status.status.padEnd(12)) +
-          // chalk.white((status.pid || "N/A").toString().padEnd(10)) +
           chalk.white(status.memory.padEnd(10)) +
           chalk.white(status.cpu.padEnd(10)) +
           chalk.white(status.uptime.padEnd(12.5)) +
@@ -57,23 +80,4 @@ export function displayAllStatuses(
       console.log(chalk.white(status.name.padEnd(38)));
     }
   });
-}
-
-export function displaySingleStatus(status: MCPStatus): void {
-  const statusColor =
-    status.status === "online"
-      ? chalk.green
-      : status.status === "offline" || status.status === "errored"
-      ? chalk.red
-      : status.status === "stopping" || status.status === "launching"
-      ? chalk.yellow
-      : chalk.gray;
-
-  console.log(
-    `${chalk.bold(
-      `${chalk.white(status.name)}`
-    )}                   (${statusColor(status.status)} / ${status.memory} / ${
-      status.cpu
-    } / ${status.uptime} / ${status.pid})`
-  );
 }

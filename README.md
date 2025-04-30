@@ -31,7 +31,11 @@ Then, install Furikake:
 curl -fsSL https://furikake.app/install | bash
 ```
 
-You should now be good to go!
+Verify the installation by running:
+
+```bash
+furi help
+```
 
 ## How to use
 
@@ -56,10 +60,10 @@ _eg. furi rename smithery-ai/mcp-fetch mcp-fetch_
 #### Delete an MCP
 
 ```bash
-furi delete <mcpName>
+furi remove <mcpName>
 ```
 
-_eg. furi delete mcp-fetch_
+_eg. furi remove mcp-fetch_
 
 #### List installed MCPs
 
@@ -129,7 +133,15 @@ If you want to get the logs a specific MCP, you can use:
 furi status <mcpName>
 ```
 
-_to add more output lines, use `-l <lines>`_
+_to view more output lines, use `-l <lines>`_
+
+#### Finally
+
+All installed MCPs, your configuration and logs are stored in the `.furikake` directory which can be located by running:
+
+```bash
+furi where
+```
 
 ### Using the HTTP API
 
@@ -156,22 +168,63 @@ To turn off the route, you can use:
 furi http stop
 ```
 
-#### Finally
+## HTTP API Routes
 
-All installed MCPs, your configuration and logs are stored in the `.furikake` directory which can be located by running:
+API Routes are divided into two types (public routes and sudo routes). You can access the public routes by default.
+
+#### Public Routes:
+
+To view all available MCPs, you can use:
 
 ```bash
-furi where
+/list
 ```
 
-#### Routes
+_if you wish to see all installed MCPs, you can add `?all=true` to the route_
 
-- /api/status (to get a list of all running MCPs)
-- /api/tools (to get a list of all available tools for all MCPs that are online)
-- /api/`mcpName`/status
-- /api/`mcpName`/restart
-- /api/`mcpName`/logs
-- /api/`mcpName`/tools (to get a list of all available tools for the defined MCP)
+To view all available tools for all MCPs that are online, you can use:
+
+```bash
+/tools
+```
+
+_List of tools are specific to online MCPs_
+
+To call a tool for a specific MCP, you can use:
+
+```bash
+/`mcpName`/call/`toolName`
+```
+
+This is the only route that uses a POST request, it can be used like this:
+
+```bash
+curl -X POST http://localhost:9339/`mcpName`/call/`toolName` -d '{"param1":"value1", "param2":"value2"}'
+```
+
+```bash
+/`mcpName`/tools
+```
+
+Get a list of all available tools for the defined MCP
+
+##### Sudo Routes:
+
+If you need sudo routes, you can toggle it with:
+
+```bash
+furi http sudo
+```
+
+With sudo routes, you can actively manage packages and instances via the http api.
+
+- /add/`author/repo` (to install a new MCP from a github repo)
+- /status (to get a list of all running MCPs)
+- /`mcpName`/status
+- /`mcpName`/restart
+- /`mcpName`/start
+- /`mcpName`/stop
+- /`mcpName`/remove
 
 ## Star History
 

@@ -1,31 +1,22 @@
 import { createSpinner } from "nanospinner";
-import { stopMCPCore } from "../stop/actions/stopMCP";
-import { startMCPCore } from "../start/actions/startMCP";
+import { restartMCPCore } from "./actions/restartMCP";
 
 export const restartMCP = async (mcpName: string) => {
   const spinner = createSpinner(`Restarting ${mcpName}`);
   spinner.start();
+
   try {
-    const stopResult = await stopMCPCore(mcpName);
-    if (!stopResult.success) {
-      spinner.error(
-        `Failed to stop ${mcpName}\n     \x1b[2m${stopResult.message}\x1b[0m`
-      );
-      return;
-    }
+    const result = await restartMCPCore(mcpName);
 
-    const startResult = await startMCPCore(mcpName);
-    if (!startResult.success) {
-      spinner.error(
-        `Failed to start ${mcpName}\n     \x1b[2m${startResult.message}\x1b[0m`
-      );
-      return;
+    if (result.success) {
+      spinner.success({ text: result.message });
+    } else {
+      spinner.error({ text: result.message });
+      process.exit(1);
     }
-
-    spinner.success({ text: `Restarted ${mcpName}` });
   } catch (error) {
     spinner.error({
-      text: `Failed to restart ${mcpName}: ${
+      text: `Unexpected error during restart: ${
         error instanceof Error ? error.message : String(error)
       }`,
     });

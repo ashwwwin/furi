@@ -8,6 +8,13 @@ export const startHttpServer = async (port?: number, exposeSudo = true) => {
     // Check if a server is already running
     const serverRunning = await isServerRunning();
 
+    if (serverRunning) {
+      spinner.warn({
+        text: "HTTP API is already running\n     To restart, use: \x1b[2mfuri http restart\x1b[0m",
+      });
+      return;
+    }
+
     // Set port if provided
     if (port) {
       setPort(port);

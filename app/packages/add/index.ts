@@ -19,12 +19,7 @@ export const addPackage = async (mcpName: string) => {
         throw new Error("BASE_PATH environment variable is not set");
       }
 
-      // TODO: Get the 'alias' from the configuration file (since already installed)
-      const config = JSON.parse(
-        readFileSync(join(basePath, ".furikake/configuration.json"), "utf-8")
-      );
-
-      let alias = "TODO";
+      let alias: string | undefined = result.alias || undefined;
 
       return spinner.warn(
         `[${mcpName}] Already installed\n     \x1b[2mTo uninstall, use: furi remove ${alias}\x1b[0m`
@@ -49,7 +44,7 @@ export const addPackage = async (mcpName: string) => {
       let input = "";
       for await (const line of console) {
         input = line;
-        break; // Just read one line
+        break;
       }
 
       if (input.trim().toLowerCase() !== "y") {

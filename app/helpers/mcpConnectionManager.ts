@@ -1,4 +1,3 @@
-import { createSpinner } from "nanospinner";
 import { readFileSync } from "fs";
 import { join } from "path";
 import pm2 from "pm2";
@@ -71,7 +70,7 @@ export const getPm2ProcessInfo = async (processName: string): Promise<any> => {
 // Check if process is running and valid
 export const checkProcessStatus = async (
   mcpName: string,
-  spinner: any
+  spinner?: any
 ): Promise<boolean> => {
   const processName = `furi_${mcpName.replace("/", "-")}`;
   const list = await getPm2List();
@@ -79,16 +78,20 @@ export const checkProcessStatus = async (
   const processEntry = list.find((p) => p.name === processName);
 
   if (!processEntry) {
-    spinner.error(
-      `[${mcpName}] Server not running \n     \x1b[2mStart it first with furi start ${mcpName}\x1b[0m`
-    );
+    if (spinner) {
+      spinner.error(
+        `[${mcpName}] Server not running \n     \x1b[2mStart it first with furi start ${mcpName}\x1b[0m`
+      );
+    }
     return false;
   }
 
   if (processEntry.pm2_env.status !== "online") {
-    spinner.error(
-      `[${mcpName}] Process is not running (status: ${processEntry.pm2_env.status})`
-    );
+    if (spinner) {
+      spinner.error(
+        `[${mcpName}] Process is not running (status: ${processEntry.pm2_env.status})`
+      );
+    }
     return false;
   }
 
@@ -144,7 +147,7 @@ export const getPackageConfig = (
 // Setup MCP connection
 export const setupMcpConnection = async (
   mcpName: string,
-  spinner: any
+  spinner?: any
 ): Promise<ConnectionResources | null> => {
   // Store resources to clean up
   let client: McpClient | null = null;
@@ -215,7 +218,9 @@ export const setupMcpConnection = async (
       },
     };
   } catch (error: any) {
-    spinner.error(`[${mcpName}] Error: ${error.message || String(error)}`);
+    if (spinner) {
+      spinner.error(`[${mcpName}] Error: ${error.message || String(error)}`);
+    }
 
     // Cleanup on error
     try {

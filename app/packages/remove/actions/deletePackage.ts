@@ -46,7 +46,7 @@ export const deletePackage = async (
       // If no package is found, check one more edgecase
       // If the <author/repo> is installed, but the MCP Name is not
       if (mcpName.split("/").length === 2) {
-        console.log("Not found in configuration");
+        // console.log("Not found in configuration");
       } else {
         return {
           success: false,

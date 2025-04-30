@@ -30,40 +30,14 @@ export const startMCPCore = async (
 
     const cwd = config[mcpName].source || `.furikake/installed/${mcpName}`;
 
-    let envVars: { variables: string[] } = { variables: [] };
-    try {
-      envVars = await scanEnvVars(mcpName);
-
-      const missingEnvVars = envVars.variables.filter((varName) => {
-        return !config[mcpName]?.env || !config[mcpName].env[varName];
-      });
-
-      if (missingEnvVars.length > 0) {
-        // TODO: spinner.warning to the user that they need to set the environment variables
-        // Ask them to run anyways, input now (loop for all missing env vars) or exit
-        // Check howthe user wants to continue
-
-        console.warn(
-          `\n[${mcpName}] Missing environment variable(s): ${missingEnvVars.join(
-            ", "
-          )}`
-        );
-      }
-    } catch (error) {
-      console.warn(
-        `[${mcpName}] Failed to scan environment variables: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
-    }
-
+    // Initialize environment variables
     const env: Record<string, string> = {};
-
     if (process.env.PATH) env.PATH = process.env.PATH;
     if (process.env.NODE_ENV) env.NODE_ENV = process.env.NODE_ENV;
     if (process.env.HOME) env.HOME = process.env.HOME;
     if (process.env.USER) env.USER = process.env.USER;
 
+    // Add environment variables from configuration
     if (config[mcpName]?.env) {
       for (const [key, value] of Object.entries(config[mcpName].env)) {
         if (value !== undefined && value !== null) {

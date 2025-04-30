@@ -1,20 +1,13 @@
 import pm2 from "pm2";
 import path from "path";
 
-// Constants for PM2
-const PM2_APP_NAME = "furi-http-server";
+const appName = "furi-http-server";
 export let port: number = 9339;
 
-/**
- * Set the port for the HTTP server
- */
 export const setPort = (newPort: number) => {
   port = newPort;
 };
 
-/**
- * Check if the server is running
- */
 export const isServerRunning = (): Promise<boolean> => {
   return new Promise((resolve) => {
     pm2.connect((err) => {
@@ -23,7 +16,7 @@ export const isServerRunning = (): Promise<boolean> => {
         return;
       }
 
-      pm2.describe(PM2_APP_NAME, (err, processDescription) => {
+      pm2.describe(appName, (err, processDescription) => {
         pm2.disconnect();
 
         if (err || !processDescription || processDescription.length === 0) {
@@ -36,9 +29,6 @@ export const isServerRunning = (): Promise<boolean> => {
   });
 };
 
-/**
- * Get the server process description
- */
 export const getServer = async () => {
   return new Promise((resolve, reject) => {
     pm2.connect((err) => {
@@ -47,7 +37,7 @@ export const getServer = async () => {
         return;
       }
 
-      pm2.describe(PM2_APP_NAME, (err, processDescription: any) => {
+      pm2.describe(appName, (err, processDescription: any) => {
         pm2.disconnect();
 
         if (err) {
@@ -62,19 +52,15 @@ export const getServer = async () => {
   });
 };
 
-/**
- * Create and start the server
- */
 export const createServer = async (): Promise<any> => {
   const isRunning = await isServerRunning();
 
   // If a server is already running, stop it first
   if (isRunning) {
-    // console.log("Stopping existing server before starting a new one...");
+    // console.log("Stopping existing server");
     await stopServer();
   }
 
-  // Connect to PM2 if not already connected
   return new Promise((resolve, reject) => {
     pm2.connect(async (err) => {
       if (err) {
@@ -90,7 +76,7 @@ export const createServer = async (): Promise<any> => {
       pm2.start(
         {
           script: serverFilePath,
-          name: PM2_APP_NAME,
+          name: appName,
           env: {
             PORT: port.toString(),
           },
@@ -98,7 +84,7 @@ export const createServer = async (): Promise<any> => {
           watch: false,
         },
         (err, apps: any) => {
-          pm2.disconnect(); // Always disconnect after operation
+          pm2.disconnect();
 
           if (err) {
             reject(err);
@@ -112,9 +98,6 @@ export const createServer = async (): Promise<any> => {
   });
 };
 
-/**
- * Stop the server
- */
 export const stopServer = async (): Promise<boolean> => {
   const isRunning = await isServerRunning();
 
@@ -129,7 +112,7 @@ export const stopServer = async (): Promise<boolean> => {
         return;
       }
 
-      pm2.delete(PM2_APP_NAME, (err) => {
+      pm2.delete(appName, (err) => {
         pm2.disconnect();
 
         if (err) {

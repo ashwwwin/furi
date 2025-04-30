@@ -2,9 +2,6 @@ import { readFileSync } from "fs";
 import { join } from "path";
 import pm2 from "pm2";
 
-/**
- * Format uptime from milliseconds to a readable string
- */
 export function formatUptime(ms: number): string {
   const seconds = Math.floor(ms / 1000);
   const minutes = Math.floor(seconds / 60);
@@ -22,9 +19,6 @@ export function formatUptime(ms: number): string {
   }
 }
 
-/**
- * Interface for MCP status information
- */
 export interface MCPStatus {
   name: string;
   pid: number | string;
@@ -34,10 +28,7 @@ export interface MCPStatus {
   uptime: string;
 }
 
-/**
- * Core function to get status information for MCPs
- */
-export const getPM2StatusCore = async (
+export const getProcStatus = async (
   mcpName: string
 ): Promise<{
   success: boolean;
@@ -105,7 +96,7 @@ export const getPM2StatusCore = async (
       // Get all installed MCPs from configuration
       const allMCPs = Object.keys(config).map((configName) => {
         // Find the matching process by comparing the last part of the config name
-        // To handle cases like "arjunkmrm/perplexity-search" vs "perplexity"
+        // To handle cases like "arjunkmrm/perplexity-search" vs "perplexity" (for example)
         const configBaseName = configName.split("/").pop() || configName;
         const simplifiedConfigName = configBaseName
           .replace(/-/g, "")

@@ -1,19 +1,20 @@
 import { createSpinner } from "nanospinner";
-import { displayAllStatuses } from "../../mcp/status/actions/displayStatus";
-import { getPM2StatusCore } from "../../mcp/status/actions/getPM2Status";
+import { displayStatus } from "../../mcp/status/actions/displayStatus";
+import { getProcStatus } from "../../mcp/status/actions/getProcStatus";
 
 export const listPackages = async (showDetails: boolean) => {
   const spinner = createSpinner("Getting MCPs");
   spinner.start();
 
-  const result = await getPM2StatusCore("all");
+  const result = await getProcStatus("all");
 
   if (!result.success) {
     return spinner.error("Failed to get MCPs");
   }
+
   if (Array.isArray(result.data)) {
     spinner.success(`${result.data.length} found\n`);
-    displayAllStatuses(result.data, {
+    displayStatus(result.data, {
       showDetails: showDetails,
     });
 
