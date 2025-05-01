@@ -2,7 +2,7 @@
 
 # 🍃 Furikake (or furi) (WIP)
 
-Furikake is an easy to use, local CLI & API for MCP management.
+Furikake is an easy to use, local CLI & API for MCP management and execution.
 
 - Download MCP servers [from GitHub]
 - Smithery.yaml detection (or auto detects/handles execution)

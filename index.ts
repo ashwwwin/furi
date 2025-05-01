@@ -21,7 +21,7 @@ const program = new Command();
 
 program
   .name("furi")
-  .summary("Furikake is a CLI & API for MCP management")
+  .summary("Furikake is a CLI & API for MCP management and execution")
   .version("0.0.1")
   .addHelpText(
     "before",
