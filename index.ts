@@ -120,9 +120,8 @@ program
 program
   .command("tools")
   .description("List all tools for an MCP server")
-  .argument("<mcpName>", "MCP name")
+  .argument("[mcpName]", "MCP Name (defaults to 'all' to show all MCPs)", "all")
   .action((mcpName) => {
-    // TODO: If no mcp name is provided, list all tools
     listTools(mcpName);
   });
 

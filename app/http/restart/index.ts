@@ -26,6 +26,10 @@ export const restartHttpServer = async () => {
     spinner.success({
       text: "HTTP API server restarted",
     });
+
+    console.log(
+      `\x1b[2mNotice: No Admin routes are exposed via HTTP API\x1b[0m`
+    );
   } catch (error: any) {
     spinner.error({
       text: `Failed to restart HTTP API server: ${
