@@ -224,6 +224,12 @@ With sudo routes, you can actively manage packages and instances via the http ap
 - /`mcpName`/stop
 - /`mcpName`/remove
 
+To start an MCP with environment variables, you can use:
+
+```bash
+curl -X POST http://localhost:9339/mcpName/start -d '{"API_KEY":"cat-dog-hamster-giraffe-zebra"}'
+```
+
 If you face any issues with the HTTP API server, you can use the `furi http status` to debug.
 
 ## Star History

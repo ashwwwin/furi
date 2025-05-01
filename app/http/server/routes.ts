@@ -10,6 +10,7 @@ import { toolsResponse } from "./endpoints/tools";
 import { singleStatusResponse } from "./endpoints/[mcpName]/status";
 import { stopResponse } from "./endpoints/[mcpName]/stop";
 import { restartResponse } from "./endpoints/[mcpName]/restart";
+import { startMCPResponse } from "./endpoints/[mcpName]/start";
 
 const PORT = parseInt(process.env.PORT || "9339");
 
@@ -122,8 +123,7 @@ const server = Bun.serve({
     // eg. /mcpName/start
     // Starts an MCP by name
     if (url.pathname.endsWith("/start")) {
-      // TODO: Implement this
-      // return startResponse(url.pathname);
+      return startMCPResponse(url.pathname, req);
     }
 
     return new Response(

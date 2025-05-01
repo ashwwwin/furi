@@ -2,21 +2,21 @@ import { createSpinner } from "nanospinner";
 import { startMCPCore } from "./actions/startMCP";
 import { scanEnvVars } from "../env/actions/scanEnvVars";
 import readline from "readline";
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import chalk from "chalk";
 
-export const startMCP = async (mcpName: string) => {
+export const startMCP = async (mcpName: string, envJson?: string) => {
   let config: any;
   let initialEnv: Record<string, string> = {};
   let mcpConfig: any;
+  const basePath = process.env.BASE_PATH || "";
+  const configPath = join(basePath, ".furikake/configuration.json");
 
   try {
-    const basePath = process.env.BASE_PATH || "";
     if (!basePath) {
       throw new Error("BASE_PATH environment variable is not set");
     }
-    const configPath = join(basePath, ".furikake/configuration.json");
     config = JSON.parse(readFileSync(configPath, "utf-8"));
 
     // Check both root level and installed section for MCP configuration
@@ -26,6 +26,40 @@ export const startMCP = async (mcpName: string) => {
     if (!mcpConfig) {
       console.error(chalk.red(`[${mcpName}] Configuration not found`));
       return;
+    }
+
+    // Process the environment variables from the JSON string if provided
+    if (envJson) {
+      try {
+        const parsedEnv = JSON.parse(envJson);
+
+        // Ensure mcpConfig.env exists
+        if (!mcpConfig.env) {
+          mcpConfig.env = {};
+        }
+
+        // Update the environment variables in the configuration
+        for (const [key, value] of Object.entries(parsedEnv)) {
+          mcpConfig.env[key] = value;
+        }
+
+        // Save the updated configuration
+        writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+        console.log(
+          chalk.green(
+            `[${mcpName}] Environment variables saved to configuration`
+          )
+        );
+      } catch (error) {
+        console.error(
+          chalk.red(
+            `[${mcpName}] Error parsing environment variables: ${
+              error instanceof Error ? error.message : String(error)
+            }`
+          )
+        );
+        return;
+      }
     }
 
     if (process.env.PATH) initialEnv.PATH = process.env.PATH;
@@ -106,6 +140,31 @@ export const startMCP = async (mcpName: string) => {
                 `[${mcpName}] All missing variables provided for this session.`
               )
             );
+
+            // Save the updated configuration to the configuration.json file
+            try {
+              writeFileSync(
+                configPath,
+                JSON.stringify(config, null, 2),
+                "utf-8"
+              );
+              console.log(
+                chalk.green(
+                  `[${mcpName}] Environment variables saved to configuration`
+                )
+              );
+            } catch (writeError) {
+              console.error(
+                chalk.yellow(
+                  `[${mcpName}] Warning: Could not save environment variables to configuration: ${
+                    writeError instanceof Error
+                      ? writeError.message
+                      : String(writeError)
+                  }`
+                )
+              );
+            }
+
             proceed = true;
             break;
           case "3":

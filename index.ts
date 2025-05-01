@@ -75,8 +75,12 @@ program
   .command("start")
   .description("Start an MCP server")
   .argument("<mcpName>", "MCP name")
-  .action((mcpName) => {
-    startMCP(mcpName);
+  .option(
+    "-e, --env <json>",
+    'Environment variables as JSON string: \'{"key":"value"}\''
+  )
+  .action((mcpName, options) => {
+    startMCP(mcpName, options.env);
   });
 
 program
