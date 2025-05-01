@@ -231,22 +231,18 @@ curl -X POST http://localhost:9339/mcpName/start -d '{"API_KEY":"cat-dog-hamster
 
 If you face any issues with the HTTP API server, you can use the `furi http status` to debug.
 
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=ashwwwin/furi&type=Date)](https://www.star-history.com/#ashwwwin/furi&Date)
-
 ## Roadmap
 
 - Different Node versions can be read and handled from package.json and passed to the pm2 interpreter with nvm
 - Python MCP support
 - Tests (for the entire project)
 
-Note: not in order and subject to change
+This is not in order, likely missing items and subject to change.
 
 ## Closing notes
 
 If you've made it this far, I hope you find Furikake useful and time saving. I built this for fun as a way for me to work with MCP's more hands on. If you wish to contribute, feel free to open an issue or a pull request. I will merge after I check out your changes.
 
-If you think this is a good idea, please star the repo. If you think this is a bad idea, please star the repo.
+If you think this is a good idea, please star the repo.
 
 Thanks for checking out Furikake.
