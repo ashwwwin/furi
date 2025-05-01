@@ -46,6 +46,14 @@ export const startMCPCore = async (
       }
     }
 
+    // Block external ports by setting environment variables
+    // This tells the MCP to use only stdio for communication and not open any network ports
+    env.MCP_COMMUNICATION_MODE = "stdio_only";
+    env.MCP_DISABLE_NETWORK = "true";
+
+    // Setting to 0 makes most servers pick a random port
+    env.PORT = "0";
+
     await new Promise<void>((resolve, reject) => {
       pm2.connect((err) => {
         if (err) {
