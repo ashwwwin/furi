@@ -234,6 +234,7 @@ If you face any issues with the HTTP API server, you can use the `furi http stat
 
 - Different Node versions can be read and handled from package.json and passed to the pm2 interpreter with nvm
 - Python MCP support
+- Tests (for the entire project)
 
 Note: not in order and subject to change
 
