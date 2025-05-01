@@ -67,14 +67,7 @@ export const startMCPCore = async (
           args: args,
           name: `furi_${mcpName.replace("/", "-")}`,
           cwd,
-          output: join(
-            process.cwd(),
-            `.furikake/logs/${mcpName.replace("/", "-")}-out.log`
-          ),
-          error: join(
-            process.cwd(),
-            `.furikake/logs/${mcpName.replace("/", "-")}-error.log`
-          ),
+          watch: true,
           env: env,
           merge_logs: true,
           log_date_format: "YYYY-MM-DD HH:mm:ss Z",

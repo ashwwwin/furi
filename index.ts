@@ -10,7 +10,12 @@ import {
   statusMCP,
 } from "./app/mcp";
 import { callTool, listTools } from "./app/tools";
-import { startHttpServer, stopHttpServer, restartHttpServer } from "./app/http";
+import {
+  startHttpServer,
+  stopHttpServer,
+  restartHttpServer,
+  httpStatus,
+} from "./app/http";
 
 const program = new Command();
 
@@ -110,6 +115,7 @@ program
   .description("List all tools for an MCP server")
   .argument("<mcpName>", "MCP name")
   .action((mcpName) => {
+    // TODO: If no mcp name is provided, list all tools
     listTools(mcpName);
   });
 
@@ -156,6 +162,15 @@ httpCommand
   .description("Restart the running HTTP API server (server must be running)")
   .action(async () => {
     await restartHttpServer();
+  });
+
+httpCommand
+  .command("status")
+  .description("Show the status of the HTTP API server")
+  .option("--lines <number>", "Number of log lines to show", "15")
+  .action(async (options) => {
+    const lines = parseInt(options.lines, 10);
+    await httpStatus(lines);
   });
 
 program.addCommand(httpCommand);

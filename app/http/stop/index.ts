@@ -8,7 +8,7 @@ export const stopHttpServer = async () => {
     const serverRunning = await isServerRunning();
 
     if (!serverRunning) {
-      spinner.warn({ text: "No HTTP API server is running" });
+      spinner.warn({ text: "HTTP API server is not running" });
       return;
     }
 

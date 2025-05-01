@@ -53,7 +53,6 @@ export const listTools = async (mcpName: string) => {
             });
           }
         }
-        console.log(); // Empty line between tools
       });
 
       // Show example usage

@@ -224,12 +224,15 @@ With sudo routes, you can actively manage packages and instances via the http ap
 - /`mcpName`/stop
 - /`mcpName`/remove
 
+If you face any issues with the HTTP API server, you can use the `furi http status` to debug.
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=ashwwwin/furi&type=Date)](https://www.star-history.com/#ashwwwin/furi&Date)
 
 ## Roadmap
-- Different Node versions can be read and handled from package.json and passed to the pm2 interpreter.
+
+- Different Node versions can be read and handled from package.json and passed to the pm2 interpreter with nvm
 - Python MCP support
 
 Note: not in order and subject to change
@@ -241,4 +244,3 @@ If you've made it this far, I hope you find Furikake useful and time saving. I b
 If you think this is a good idea, please star the repo. If you think this is a bad idea, please star the repo.
 
 Thanks for checking out Furikake.
-

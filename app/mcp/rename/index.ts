@@ -194,14 +194,6 @@ export const renameMCP = async (currentName: string, newName: string) => {
                 args: args.join(" "),
                 name: newProcessName,
                 cwd,
-                output: join(
-                  process.cwd(),
-                  `.furikake/logs/${newName.replace("/", "-")}-out.log`
-                ),
-                error: join(
-                  process.cwd(),
-                  `.furikake/logs/${newName.replace("/", "-")}-error.log`
-                ),
                 interpreter_args: cmd === "npm" ? [] : undefined,
                 env: env,
                 merge_logs: true,
