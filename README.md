@@ -5,8 +5,7 @@
 Furikake is an easy to use, local CLI & API for MCP management.
 
 - Download MCP servers [from GitHub]
-- Smithery.yaml detection (source of execution)
-- Automatically tries to handle build, run if unspecified
+- Smithery.yaml detection (or auto detects/handles execution)
 - Fully featured CLI [nanospinners, readability]
 - Typescript & Javascript MCP's built in are supported
 - Python based MCP's are a key roadmap item (and will be supported)
