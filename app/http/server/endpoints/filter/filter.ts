@@ -4,6 +4,9 @@
 import { GoogleGenAI } from "@google/genai";
 import { toolsResponse } from "../tools";
 
+// TODO: Model selection & input for model selection + api key
+// Should be able to select from a list of models
+
 export const queryEndpoint = async (query: string) => {
   const toolsList = await (await toolsResponse()).json();
 
