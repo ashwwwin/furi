@@ -169,7 +169,9 @@ httpCommand
 
 httpCommand
   .command("restart")
-  .description("Restart the running HTTP API server (server must be running)")
+  .description(
+    "Restart the running HTTP API server (preserves --sudo and port settings)"
+  )
   .action(async () => {
     await restartHttpServer();
   });

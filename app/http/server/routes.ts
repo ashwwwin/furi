@@ -36,6 +36,7 @@ console.log(`Admin routes ${exposeSudoRoutes ? "enabled" : "disabled"}`);
 // /<mcpName>/status?lines=<number> (get the status + logs of an MCP)
 // /<mcpName>/stop (stop an MCP)
 // /<mcpName>/restart (restart an MCP)
+// TODO: /<mcpName>/env (get the environment variables for an MCP)
 
 // /<mcpName>/start?env=JSON.stringify({}) (start an MCP)
 // These are all JSON responses.
