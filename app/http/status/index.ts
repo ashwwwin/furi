@@ -8,10 +8,6 @@ import { $ } from "bun";
 import { formatUptime } from "../../mcp/status/actions/getProcStatus";
 import { displayStatus } from "../../mcp/status/actions/displayStatus";
 
-/**
- * Get the HTTP server logs
- * @param lines Number of lines to show
- */
 const getHttpServerLogs = async (
   lines: number = 15
 ): Promise<{ output: string; error: string }> => {
@@ -91,9 +87,6 @@ const getHttpServerLogs = async (
   }
 };
 
-/**
- * Get the status of the HTTP server
- */
 export const getHttpServerStatus = async (lines: number = 15) => {
   try {
     const appName = "furi-http-server";
@@ -127,7 +120,7 @@ export const getHttpServerStatus = async (lines: number = 15) => {
 
     // Format the status data
     const status = {
-      name: "HTTP Server",
+      name: "HTTP API Server",
       pid: processInfo.pid || "N/A",
       status: processInfo.pm2_env?.status || "unknown",
       memory: processInfo.monit?.memory
@@ -173,7 +166,9 @@ export const getHttpServerStatus = async (lines: number = 15) => {
   } catch (error: any) {
     console.error(
       chalk.red(
-        `Failed to get HTTP server status: ${error.message || String(error)}`
+        `Failed to get HTTP API server status: ${
+          error.message || String(error)
+        }`
       )
     );
   } finally {
