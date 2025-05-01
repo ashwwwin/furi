@@ -16,10 +16,8 @@ const PORT = parseInt(process.env.PORT || "9339");
 
 console.log(`Starting Furi HTTP API server on port ${PORT}...`);
 
-// TODO: Improve error messages in the endpoints (MCP not found is vague) (All throughout the endpoints directory)
-
-// If you want to expose the server to the public, set this to false
-// This will allow anyone to start/stop and mcp.
+// TODO: Improve error messages in the endpoints (MCP not found is vague)
+// (All throughout the endpoints directory)
 
 const exposeSudoRoutes = process.env.EXPOSE_SUDO === "true";
 

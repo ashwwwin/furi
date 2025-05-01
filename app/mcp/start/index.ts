@@ -45,11 +45,6 @@ export const startMCP = async (mcpName: string, envJson?: string) => {
 
         // Save the updated configuration
         writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
-        console.log(
-          chalk.green(
-            `[${mcpName}] Environment variables saved to configuration`
-          )
-        );
       } catch (error) {
         console.error(
           chalk.red(
@@ -147,11 +142,6 @@ export const startMCP = async (mcpName: string, envJson?: string) => {
                 configPath,
                 JSON.stringify(config, null, 2),
                 "utf-8"
-              );
-              console.log(
-                chalk.green(
-                  `[${mcpName}] Environment variables saved to configuration`
-                )
               );
             } catch (writeError) {
               console.error(
