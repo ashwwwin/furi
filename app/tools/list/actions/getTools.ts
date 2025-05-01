@@ -1,9 +1,9 @@
-import type { McpClient } from "../../../helpers/mcpConnectionManager";
+import type { McpClient } from "@/helpers/mcpConnectionManager";
 import {
   setupMcpConnection,
   disconnectFromPm2,
-} from "../../../helpers/mcpConnectionManager";
-import { getProcStatus } from "../../../mcp/status/actions/getProcStatus";
+} from "@/helpers/mcpConnectionManager";
+import { getProcStatus } from "@/mcp/status/actions/getProcStatus";
 
 export interface Tool {
   name: string;

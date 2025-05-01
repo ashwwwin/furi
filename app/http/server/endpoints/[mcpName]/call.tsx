@@ -1,6 +1,6 @@
-import { setupMcpConnection } from "../../../../helpers/mcpConnectionManager";
-import { executeToolCall } from "../../../../tools/call/actions/callTool";
-import { extractMcpName  } from "../../utils";
+import { setupMcpConnection } from "@/helpers/mcpConnectionManager";
+import { executeToolCall } from "@/tools/call/actions/callTool";
+import { extractMcpName } from "@/http/server/utils";
 
 // Minimal error formatter for the HTTP response
 const formatError = (error: any): string => {

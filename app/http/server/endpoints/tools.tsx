@@ -1,5 +1,5 @@
-import { setupMcpConnection } from "../../../helpers/mcpConnectionManager";
-import { getTools } from "../../../tools/list/actions/getTools";
+import { setupMcpConnection } from "@/helpers/mcpConnectionManager";
+import { getTools } from "@/tools/list/actions/getTools";
 import { listResponse } from "./list";
 
 export const toolsResponse = async () => {

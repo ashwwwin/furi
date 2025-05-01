@@ -1,6 +1,6 @@
 import { createSpinner } from "nanospinner";
-import { displayStatus } from "../../mcp/status/actions/displayStatus";
-import { getProcStatus } from "../../mcp/status/actions/getProcStatus";
+import { displayStatus } from "@/mcp/status/actions/displayStatus";
+import { getProcStatus } from "@/mcp/status/actions/getProcStatus";
 
 export const listPackages = async (showDetails: boolean) => {
   const spinner = createSpinner("Getting MCPs");

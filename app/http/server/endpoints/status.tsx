@@ -1,4 +1,4 @@
-import { getProcStatus } from "../../../mcp/status/actions/getProcStatus";
+import { getProcStatus } from "@/mcp/status/actions/getProcStatus";
 
 export const statusResponse = async () => {
   const result = await getProcStatus("all");

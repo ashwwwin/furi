@@ -1,5 +1,4 @@
-import type { McpClient } from "../../../helpers/mcpConnectionManager";
-// import type { ToolCallResult } from "../../../../types/tool_schemas"; // Removed type for now
+import type { McpClient } from "@/helpers/mcpConnectionManager";
 
 export const executeToolCall = async (
   client: McpClient,

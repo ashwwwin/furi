@@ -1,11 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import pm2 from "pm2";
-import { scanEnvVars } from "../../env/actions/scanEnvVars";
 
-/**
- * Core function to start an MCP server without spinner UI
- */
 export const startMCPCore = async (
   mcpName: string
 ): Promise<{ success: boolean; message: string }> => {

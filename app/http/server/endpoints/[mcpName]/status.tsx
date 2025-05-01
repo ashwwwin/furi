@@ -1,5 +1,5 @@
-import { getProcStatus } from "../../../../mcp/status/actions/getProcStatus";
-import { getMCPLogs } from "../../../../mcp/status/index";
+import { getProcStatus } from "@/mcp/status/actions/getProcStatus";
+import { getMCPLogs } from "@/mcp/status/index";
 import { extractMcpName } from "../../utils";
 
 export const singleStatusResponse = async (pathname: string, url: URL) => {

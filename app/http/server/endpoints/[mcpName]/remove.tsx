@@ -1,5 +1,5 @@
-import { deletePackage } from "../../../../packages/remove/actions/deletePackage";
-import { extractMcpName } from "../../utils"; // Adjusted path
+import { deletePackage } from "@/packages/remove/actions/deletePackage";
+import { extractMcpName } from "@/http/server/utils"; // Adjusted path
 
 export const removeResponse = async (pathname: string) => {
   // Extract mcpName from pathname

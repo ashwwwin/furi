@@ -5,8 +5,8 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { $ } from "bun";
-import { formatUptime } from "../../mcp/status/actions/getProcStatus";
-import { displayStatus } from "../../mcp/status/actions/displayStatus";
+import { formatUptime } from "@/mcp/status/actions/getProcStatus";
+import { displayStatus } from "@/mcp/status/actions/displayStatus";
 
 const getHttpServerLogs = async (
   lines: number = 15

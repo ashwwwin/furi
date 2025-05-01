@@ -1,6 +1,6 @@
-import { addPackage } from "../../../packages/add";
-import { initializePackage } from "../../../packages/add/actions/initializePackage";
-import { validatePackage } from "../../../packages/add/actions/validatePackage";
+import { addPackage } from "@/packages/add";
+import { initializePackage } from "@/packages/add/actions/initializePackage";
+import { validatePackage } from "@/packages/add/actions/validatePackage";
 import { extractMcpName } from "../utils"; // Import mcpName utility
 
 export const addResponse = async (pathname: string) => {
@@ -16,8 +16,14 @@ export const addResponse = async (pathname: string) => {
   const mcpName = mcpNameResult;
 
   // mcpName is expected to be in 'author/repo' format
-  if (!mcpName || !mcpName.includes('/')) {
-     return new Response(JSON.stringify({ success: false, message: "Invalid mcpName format after extraction" }), { status: 400 });
+  if (!mcpName || !mcpName.includes("/")) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: "Invalid mcpName format after extraction",
+      }),
+      { status: 400 }
+    );
   }
 
   const result = await validatePackage(mcpName);

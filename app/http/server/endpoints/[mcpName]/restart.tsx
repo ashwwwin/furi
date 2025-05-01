@@ -1,4 +1,4 @@
-import { restartMCPCore } from "../../../../mcp/restart/actions/restartMCP";
+import { restartMCPCore } from "@/mcp/restart/actions/restartMCP";
 
 export const restartResponse = async (pathname: string) => {
   // Extract mcpName from the path, e.g. /foo/restart => foo

@@ -1,4 +1,4 @@
-import { stopMCPCore } from "../../../../mcp/stop/actions/stopMCP";
+import { stopMCPCore } from "@/mcp/stop/actions/stopMCP";
 import { extractMcpName } from "../../utils"; // Import the utility function
 
 export const stopResponse = async (pathname: string) => {

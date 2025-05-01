@@ -1,5 +1,5 @@
 import { createSpinner } from "nanospinner";
-import { setupMcpConnection } from "../../helpers/mcpConnectionManager";
+import { setupMcpConnection } from "@/helpers/mcpConnectionManager";
 import { executeToolCall } from "./actions/callTool";
 
 export const callTool = async (
