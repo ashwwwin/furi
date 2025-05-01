@@ -30,7 +30,14 @@ CLI & API for MCP management
 
 https://furikake.app
 https://github.com/ashwwin/furi\n\x1b[0m`
-  );
+  )
+  .showHelpAfterError()
+  .showSuggestionAfterError();
+
+// Set a default action if no command is specified
+if (process.argv.length <= 2) {
+  process.argv.push("--help");
+}
 
 program
   .command("add")

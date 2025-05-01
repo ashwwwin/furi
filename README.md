@@ -34,7 +34,7 @@ curl -fsSL https://furikake.app/install | bash
 Verify the installation by running:
 
 ```bash
-furi help
+furi
 ```
 
 ## How to use
