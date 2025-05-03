@@ -22,11 +22,11 @@ const program = new Command();
 program
   .name("furi")
   .summary("Furikake is a CLI & API for MCP management and execution")
-  .version("0.0.1")
+  .version("0.1.0")
   .addHelpText(
     "before",
     `\x1b[2m🍃 Furikake
-CLI & API for MCP management
+CLI & API for MCP management and execution
 
 https://furikake.app
 https://github.com/ashwwin/furi\n\x1b[0m`
