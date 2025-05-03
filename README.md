@@ -180,7 +180,7 @@ All API endpoints follow a standardized JSON response format:
   ```json
   {
     "success": true,
-    "data": {...}  // The response data varies by endpoint
+    "data": {"theResponseVariesByEndpoint"}
   }
   ```
 
@@ -199,12 +199,12 @@ All API endpoints follow a standardized JSON response format:
 
 ### Public Routes
 
-| Endpoint                     | Method | Description                                    | Parameters                                        |
-| ---------------------------- | ------ | ---------------------------------------------- | ------------------------------------------------- |
-| `/list`                      | GET    | List running MCPs                              | `?all=true` (optional) to show all installed MCPs |
-| `/tools`                     | GET    | List all available tools from all running MCPs | None                                              |
-| `/<mcpName>/tools`           | GET    | List tools for a specific MCP                  | None                                              |
-| `/<mcpName>/call/<toolName>` | POST   | Call a tool on an MCP                          | Tool parameters as JSON in request body           |
+| Endpoint                     | Method | Description                                    | Parameters                                        | Response Format                                                                                                                    |
+| ---------------------------- | ------ | ---------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `/list`                      | GET    | List running MCPs                              | `?all=true` (optional) to show all installed MCPs | `{"success": true, "data": ["mcpName1", "mcpName2"]}`                                                                              |
+| `/tools`                     | GET    | List all available tools from all running MCPs | None                                              | `{"success": true, "data": [{"name": "toolName", "description": "Tool description", "inputSchema": {...}, "mcpName": "mcpName"}]}` |
+| `/<mcpName>/tools`           | GET    | List tools for a specific MCP                  | None                                              | `{"success": true, "data": [{"name": "toolName", "description": "Tool description", "inputSchema": {...}}]}`                       |
+| `/<mcpName>/call/<toolName>` | POST   | Call a tool on an MCP                          | Tool parameters as JSON in request body           | `{"success": true, "data": {/* Tool-specific response */}}`                                                                        |
 
 #### Example Usage:
 
@@ -246,15 +246,15 @@ To enable sudo routes that allow API management of MCPs:
 furi http start --sudo
 ```
 
-| Endpoint               | Method | Description                                  | Parameters                                    |
-| ---------------------- | ------ | -------------------------------------------- | --------------------------------------------- |
-| `/status`              | GET    | Get status of all MCPs (running and stopped) | None                                          |
-| `/add/<author>/<repo>` | GET    | Install MCP from GitHub                      | None                                          |
-| `/<mcpName>/status`    | GET    | Get status of a specific MCP                 | `?lines=10` (optional) to control log lines   |
-| `/<mcpName>/restart`   | GET    | Restart a specific MCP                       | None                                          |
-| `/<mcpName>/start`     | POST   | Start a specific MCP                         | Environment variables as JSON in request body |
-| `/<mcpName>/stop`      | GET    | Stop a specific MCP                          | None                                          |
-| `/<mcpName>/remove`    | GET    | Delete a specific MCP                        | None                                          |
+| Endpoint               | Method | Description                                  | Parameters                                    | Response Format                                                                                                                       |
+| ---------------------- | ------ | -------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `/status`              | GET    | Get status of all MCPs (running and stopped) | None                                          | `{"success": true, "data": [{"name": "mcpName", "pid": "12345", "status": "online", "cpu": "0%", "memory": "10MB", "uptime": "2h"}]}` |
+| `/add/<author>/<repo>` | GET    | Install MCP from GitHub                      | None                                          | `{"success": true, "data": {"installed": true, "message": "Successfully installed"}}`                                                 |
+| `/<mcpName>/status`    | GET    | Get status of a specific MCP                 | `?lines=10` (optional) to control log lines   | `{"success": true, "data": {"name": "mcpName", "pid": "12345", "status": "online", "logs": ["log line 1", "log line 2"]}}`            |
+| `/<mcpName>/restart`   | GET    | Restart a specific MCP                       | None                                          | `{"success": true, "data": {"restarted": true}}`                                                                                      |
+| `/<mcpName>/start`     | POST   | Start a specific MCP                         | Environment variables as JSON in request body | `{"success": true, "data": {"started": true}}`                                                                                        |
+| `/<mcpName>/stop`      | GET    | Stop a specific MCP                          | None                                          | `{"success": true, "data": {"stopped": true}}`                                                                                        |
+| `/<mcpName>/remove`    | GET    | Delete a specific MCP                        | None                                          | `{"success": true, "data": {"removed": true}}`                                                                                        |
 
 #### Example Usage:
 
