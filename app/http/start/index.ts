@@ -1,10 +1,19 @@
+import { isPortFree } from "@/helpers/checkPort";
 import { createServer, setPort, isServerRunning } from "../server/server";
 import { createSpinner } from "nanospinner";
 
-export const startHttpServer = async (port?: number, exposeSudo = false) => {
+export const startHttpServer = async (port: number, exposeSudo = false) => {
   const spinner = createSpinner("Starting HTTP API server").start();
 
   try {
+    // Check if the port is already in use
+    const portInUse = await isPortFree(port);
+    if (!portInUse) {
+      spinner.error({
+        text: `Port ${port} is already in use. Please choose a different port.`,
+      });
+      return;
+    }
     // Check if a server is already running
     const serverRunning = await isServerRunning();
 
