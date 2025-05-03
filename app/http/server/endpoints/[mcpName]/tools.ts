@@ -18,6 +18,11 @@ export const specificToolsResponse = async (pathname: string) => {
     );
   }
 
-  const tools = await getTools(resources.client);
-  return new Response(JSON.stringify(tools));
+  const toolsResult = await getTools(resources.client);
+  return new Response(
+    JSON.stringify({
+      success: true,
+      data: toolsResult.tools,
+    })
+  );
 };

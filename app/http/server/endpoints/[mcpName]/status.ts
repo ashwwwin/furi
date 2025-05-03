@@ -21,6 +21,9 @@ export const singleStatusResponse = async (pathname: string, url: URL) => {
   const result = await getProcStatus(mcpName);
   const logs = await getMCPLogs(mcpName, lines);
   return new Response(
-    JSON.stringify({ ...result, logs })
+    JSON.stringify({
+      success: true,
+      data: { ...result, logs },
+    })
   );
 };

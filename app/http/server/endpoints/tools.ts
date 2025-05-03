@@ -13,7 +13,7 @@ export const toolsResponse = async () => {
     );
   }
 
-  let result: any = [];
+  let tools: any = [];
   for (const mcp of listData) {
     const resources = await setupMcpConnection(mcp);
 
@@ -27,7 +27,7 @@ export const toolsResponse = async () => {
     const toolsResult = await getTools(client);
 
     toolsResult.tools.map((tool: any) => {
-      result.push({
+      tools.push({
         name: tool.name,
         description: tool.description,
         inputSchema: tool.inputSchema,
@@ -36,5 +36,10 @@ export const toolsResponse = async () => {
     });
   }
 
-  return new Response(JSON.stringify(result));
+  return new Response(
+    JSON.stringify({
+      success: true,
+      data: tools,
+    })
+  );
 };

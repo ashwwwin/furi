@@ -167,66 +167,137 @@ To turn off the route, you can use:
 furi http stop
 ```
 
-### HTTP API Routes
+### HTTP API Reference
 
-API Routes are divided into two types (public routes and sudo routes). You can access the public routes by default.
+The Furikake HTTP API is divided into **public routes** and **sudo routes**. Public routes are accessible by default, while sudo routes must be explicitly enabled. With sudo routes, you can actively manage packages and instances via the HTTP API.
 
-#### Public routes
+#### API Response Format
 
-To view all running MCPs, you can use:
+All API endpoints follow a standardized JSON response format:
+
+- **Success responses**:
+
+  ```json
+  {
+    "success": true,
+    "data": {...}  // The response data varies by endpoint
+  }
+  ```
+
+- **Error responses**:
+  ```json
+  {
+    "success": false,
+    "message": "Descriptive error message"
+  }
+  ```
+
+#### HTTP Methods
+
+- **POST** - Used only for `/mcpName/call/toolName` and `/mcpName/start` endpoints
+- **GET** - Used for all other endpoints
+
+### Public Routes
+
+| Endpoint                     | Method | Description                                    | Parameters                                        |
+| ---------------------------- | ------ | ---------------------------------------------- | ------------------------------------------------- |
+| `/list`                      | GET    | List running MCPs                              | `?all=true` (optional) to show all installed MCPs |
+| `/tools`                     | GET    | List all available tools from all running MCPs | None                                              |
+| `/<mcpName>/tools`           | GET    | List tools for a specific MCP                  | None                                              |
+| `/<mcpName>/call/<toolName>` | POST   | Call a tool on an MCP                          | Tool parameters as JSON in request body           |
+
+#### Example Usage:
+
+List running MCPs:
 
 ```bash
-/list
+curl http://localhost:9339/list
 ```
 
-_if you wish to see all installed MCPs, you can add `?all=true` to the route_
-
-To view all available tools for all MCPs that are online, you can use:
+To view all available tools for all online MCPs, you can use:
 
 ```bash
-/tools
+curl "http://localhost:9339/list"
 ```
 
-To call a tool for a specific MCP, you can use:
+List tools for all online MCPs:
 
 ```bash
-/`mcpName`/call/`toolName`
+curl http://localhost:9339/tools
 ```
 
-This is the only route that uses a POST request, it can be used like this:
+List tools for a specific MCP:
 
 ```bash
-curl -X POST http://localhost:9339/`mcpName`/call/`toolName` -d '{"param1":"value1", "param2":"value2"}'
+curl http://localhost:9339/<mcpName>/tools
 ```
 
-Get a list of all available tools for the defined MCP by running:
+Call a tool:
 
 ```bash
-/`mcpName`/tools
+curl -X POST http://localhost:9339/<mcpName>/call/<toolName> -d '{"data1":"value1", "data2":"value2"}'
 ```
 
-#### Sudo routes
+### Sudo Routes
 
-If you need sudo routes, you can use start with the `sudo` flag:
+To enable sudo routes that allow API management of MCPs:
 
 ```bash
 furi http start --sudo
 ```
 
-With sudo routes, you can actively manage packages and instances via the http api.
+| Endpoint               | Method | Description                                  | Parameters                                    |
+| ---------------------- | ------ | -------------------------------------------- | --------------------------------------------- |
+| `/status`              | GET    | Get status of all MCPs (running and stopped) | None                                          |
+| `/add/<author>/<repo>` | GET    | Install MCP from GitHub                      | None                                          |
+| `/<mcpName>/status`    | GET    | Get status of a specific MCP                 | `?lines=10` (optional) to control log lines   |
+| `/<mcpName>/restart`   | GET    | Restart a specific MCP                       | None                                          |
+| `/<mcpName>/start`     | POST   | Start a specific MCP                         | Environment variables as JSON in request body |
+| `/<mcpName>/stop`      | GET    | Stop a specific MCP                          | None                                          |
+| `/<mcpName>/remove`    | GET    | Delete a specific MCP                        | None                                          |
 
-- /add/`author/repo` (to install a new MCP from a github repo)
-- /status (to get a list of all running MCPs)
-- /`mcpName`/status
-- /`mcpName`/restart
-- /`mcpName`/start
-- /`mcpName`/stop
-- /`mcpName`/remove
+#### Example Usage:
 
-To start an MCP with environment variables, you can use:
+Get status of all MCPs:
 
 ```bash
-curl -X POST http://localhost:9339/mcpName/start -d '{"API_KEY":"cat-dog-hamster-giraffe-zebra"}'
+curl http://localhost:9339/status
+```
+
+Install an MCP:
+
+```bash
+curl http://localhost:9339/add/<author>/<repo>
+```
+
+Get status and logs of a specific MCP:
+
+```bash
+curl "http://localhost:9339/<mcpName>/status?lines=20"
+```
+
+Start an MCP with environment variables:
+
+```bash
+curl -X POST http://localhost:9339/<mcpName>/start -d '{"API_KEY":"your-api-key-here"}'
+```
+
+Restart an MCP:
+
+```bash
+curl http://localhost:9339/<mcpName>/restart
+```
+
+Stop an MCP:
+
+```bash
+curl http://localhost:9339/<mcpName>/stop
+```
+
+Remove an MCP:
+
+```bash
+curl http://localhost:9339/<mcpName>/remove
 ```
 
 If you face any issues with the HTTP API server, you can use the `furi http status` to debug.

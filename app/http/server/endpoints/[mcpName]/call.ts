@@ -21,7 +21,10 @@ export const callResponse = async (pathname: string, body: any) => {
   // Extract toolName from pathname
   const pathParts = pathname.split("/").filter(Boolean);
   const callIndex = pathParts.indexOf("call");
-  const toolName = callIndex > -1 && callIndex < pathParts.length - 1 ? pathParts[callIndex + 1] : undefined;
+  const toolName =
+    callIndex > -1 && callIndex < pathParts.length - 1
+      ? pathParts[callIndex + 1]
+      : undefined;
   if (!toolName) {
     return new Response(
       JSON.stringify({ success: false, message: "Tool name missing in path" }),
@@ -52,7 +55,10 @@ export const callResponse = async (pathname: string, body: any) => {
       dataString = JSON.stringify(body);
     } catch (e) {
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to stringify request body" }),
+        JSON.stringify({
+          success: false,
+          error: "Failed to stringify request body",
+        }),
         { status: 400 } // Bad Request
       );
     }
@@ -69,7 +75,7 @@ export const callResponse = async (pathname: string, body: any) => {
       );
     } else {
       // Success
-      return new Response(JSON.stringify({ success: true, result: result }));
+      return new Response(JSON.stringify({ success: true, data: result }));
     }
   } catch (error: any) {
     // Catch connection errors or other unexpected issues during the process

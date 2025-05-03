@@ -33,7 +33,12 @@ export const addResponse = async (pathname: string) => {
 
     if (installResult?.success) {
       const initializeResult = await initializePackage(mcpName);
-      return new Response(JSON.stringify(initializeResult));
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: initializeResult,
+        })
+      );
     }
 
     return new Response(JSON.stringify({ success: false, ...installResult }));

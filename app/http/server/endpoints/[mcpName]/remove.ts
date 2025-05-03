@@ -14,5 +14,5 @@ export const removeResponse = async (pathname: string) => {
   const mcpName = mcpNameResult;
 
   const result = await deletePackage(mcpName);
-  return new Response(JSON.stringify(result));
+  return new Response(JSON.stringify({ success: true, data: result }));
 };

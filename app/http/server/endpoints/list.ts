@@ -15,7 +15,12 @@ export const listResponse = async (showAll = false) => {
           .map((mcp) => mcp.name);
       }
 
-      return new Response(JSON.stringify(names));
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: names,
+        })
+      );
     }
     return new Response(
       JSON.stringify({ success: false, message: "No MCPs found" })
