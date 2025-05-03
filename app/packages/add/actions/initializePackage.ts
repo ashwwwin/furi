@@ -1,11 +1,5 @@
 import { join, relative, dirname } from "path";
-import {
-  existsSync,
-  readFileSync,
-  writeFileSync,
-  mkdirSync,
-  readdirSync,
-} from "node:fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import yaml from "js-yaml";
 
 type PackageOutput = {
