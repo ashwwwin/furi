@@ -3,7 +3,7 @@ import { validatePackage } from "./actions/validatePackage";
 import { cloneRepo } from "./actions/cloneRepo";
 import { initializePackage } from "./actions/initializePackage";
 import { join } from "path";
-import { readFileSync } from "fs";
+import { deletePackage } from "../remove/actions/deletePackage";
 
 export const addPackage = async (mcpName: string) => {
   const spinner = createSpinner(`[${mcpName}] Installing`);
@@ -49,11 +49,7 @@ export const addPackage = async (mcpName: string) => {
 
       if (input.trim().toLowerCase() !== "y") {
         // Delete the package directory if the build failed
-        const basePath = process.env.BASE_PATH;
-        if (basePath) {
-          const packagePath = join(basePath, mcpName);
-          await Bun.$`rm -rf ${packagePath}`.quiet();
-        }
+        await deletePackage(mcpName);
 
         spinner.error(`[${mcpName}] Failed to install`);
 
