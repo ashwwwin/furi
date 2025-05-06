@@ -6,7 +6,6 @@ export const startHttpServer = async (port: number, exposeSudo = false) => {
   const spinner = createSpinner("Starting HTTP API server").start();
 
   try {
-    // Check if the port is already in use
     const portInUse = await isPortFree(port);
     if (!portInUse) {
       spinner.error({
@@ -14,7 +13,7 @@ export const startHttpServer = async (port: number, exposeSudo = false) => {
       });
       return;
     }
-    // Check if a server is already running
+
     const serverRunning = await isServerRunning();
 
     if (serverRunning) {
@@ -24,7 +23,6 @@ export const startHttpServer = async (port: number, exposeSudo = false) => {
       return;
     }
 
-    // Set port if provided
     if (port) {
       setPort(port);
       if (serverRunning) {
@@ -39,7 +37,6 @@ export const startHttpServer = async (port: number, exposeSudo = false) => {
       return;
     }
 
-    // Start the server
     await createServer(exposeSudo);
 
     spinner.success({ text: "HTTP API server started" });

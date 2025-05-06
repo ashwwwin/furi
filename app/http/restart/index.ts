@@ -4,7 +4,7 @@ import {
   createServer,
   getServer,
   setPort,
-} from "../server/server";
+} from "@/http/server/server";
 import { createSpinner } from "nanospinner";
 
 export const restartHttpServer = async () => {
