@@ -340,14 +340,6 @@ curl http://localhost:9339/<mcpName>/remove
 
 If you face any issues with the HTTP API server, you can use the `furi http status` to debug.
 
-## Roadmap
-
-- Different Node versions can be read and handled from package.json and passed to the pm2 interpreter with nvm
-- Python MCP support
-- Tests (for the entire project)
-
-This is not in order, likely missing items and subject to change.
-
 ## Closing notes
 
 If you've made it this far, I hope you find Furikake useful and time saving. I built this for fun as a way for me to work with MCP's more hands on. If you wish to contribute, feel free to open an issue or a pull request. I will merge after I check out your changes.
