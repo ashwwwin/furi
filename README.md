@@ -163,6 +163,48 @@ To turn off the route, you can use:
 furi http stop
 ```
 
+## Using the MCP Aggregator
+
+You can use Furikake with any MCP client such as Cursor via the MCP Aggregator.
+
+Furi collects tools from all running MCPs and exposes them through a single server. It is an SSE endpoint that your app or mcp client can subscribe to.
+
+To start the aggregator server:
+
+```bash
+furi meta start
+```
+
+_This will also show you the endpoint your MCP client needs to subscribe to_
+
+You can specify a custom port:
+
+```bash
+furi meta start -p 9338
+```
+
+_If you don't pass a port, it will default to 9338_
+
+To stop the aggregator:
+
+```bash
+furi meta stop
+```
+
+To restart the aggregator (preserving port settings):
+
+```bash
+furi meta restart
+```
+
+To check the status of the aggregator server:
+
+```bash
+furi meta status
+```
+
+_To view more output lines, use `-l <lines>`_
+
 ### HTTP API Reference
 
 The Furikake HTTP API is divided into **public routes** and **sudo routes**. Public routes are accessible by default, while sudo routes must be explicitly enabled. With sudo routes, you can actively manage packages and instances via the HTTP API.

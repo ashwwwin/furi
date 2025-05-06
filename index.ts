@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 import { Command } from "commander";
-import { addPackage, removePackage, listPackages } from "./app/packages";
+import { addPackage, removePackage, listPackages } from "@/packages";
 import {
   getEnvironmentVariables,
   stopMCP,
@@ -8,14 +8,20 @@ import {
   renameMCP,
   restartMCP,
   statusMCP,
-} from "./app/mcp";
-import { callTool, listTools } from "./app/tools";
+} from "@/mcp";
+import { callTool, listTools } from "@/tools";
 import {
   startHttpServer,
   stopHttpServer,
   restartHttpServer,
   httpStatus,
-} from "./app/http";
+} from "@/http";
+import {
+  startMCPAggregatorServer,
+  stopMCPAggregatorServer,
+  restartMCPAggregatorServer,
+  aggregatorStatus,
+} from "@/aggregator";
 
 const program = new Command();
 
@@ -29,7 +35,7 @@ program
 CLI & API for MCP management and execution
 
 https://furikake.app
-https://github.com/ashwwin/furi\n\x1b[0m`
+https://github.com/ashwwwin/furi\n\x1b[0m`
   )
   .showHelpAfterError()
   .showSuggestionAfterError();
@@ -185,5 +191,44 @@ httpCommand
     await httpStatus(lines);
   });
 
+const metaCommand = new Command("meta").description("MCP Aggregator Commands");
+
+metaCommand
+  .command("start")
+  .description("Starts the MCP aggregation server")
+  // .option("-t, --transport <transport>", "Transport type", "sse")
+  .option("-p, --port <port>", "Port number", "9338")
+  .action((options) => {
+    // const transport = options.transport || "sse";
+    const transport = "sse";
+    const port = parseInt(options.port, 10);
+
+    startMCPAggregatorServer(transport, port);
+  });
+
+metaCommand
+  .command("stop")
+  .description("Stops the Meta MCP Aggregator server")
+  .action(async () => {
+    await stopMCPAggregatorServer();
+  });
+
+metaCommand
+  .command("restart")
+  .description("Restarts the Meta MCP Aggregator server")
+  .action(async () => {
+    await restartMCPAggregatorServer();
+  });
+
+metaCommand
+  .command("status")
+  .description("Shows the status of the Meta MCP Aggregator server")
+  .option("-l, --lines <lines>", "Number of log lines to show", "15")
+  .action(async (options) => {
+    const lines = parseInt(options.lines, 10);
+    await aggregatorStatus(lines);
+  });
+
 program.addCommand(httpCommand);
+program.addCommand(metaCommand);
 program.parse(process.argv);
