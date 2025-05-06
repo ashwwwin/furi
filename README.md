@@ -138,31 +138,6 @@ All installed MCPs, your configuration and logs are stored in the `.furikake` di
 furi where
 ```
 
-## Using the HTTP API
-
-- Any MCP that is running, will automatically have an http route.
-- Turning an MCP on/off can only be done via the cli.
-
-To access your MCP's via http, you can turn on the proxy via:
-
-```bash
-furi http start
-```
-
-In order to pass a port, you can use the `http start -p <port>` flag.
-
-```bash
-furi http start -p 9339
-```
-
-_If you don't pass a port, it will default to 9339_
-
-To turn off the route, you can use:
-
-```bash
-furi http stop
-```
-
 ## Using the MCP Aggregator
 
 You can use Furikake with any MCP client such as Cursor via the MCP Aggregator.
@@ -204,6 +179,31 @@ furi meta status
 ```
 
 _To view more output lines, use `-l <lines>`_
+
+## Using the HTTP API
+
+- Any MCP that is running, will automatically have an http route.
+- Turning an MCP on/off can only be done via the cli.
+
+To access your MCP's via http, you can turn on the proxy via:
+
+```bash
+furi http start
+```
+
+In order to pass a port, you can use the `http start -p <port>` flag.
+
+```bash
+furi http start -p 9339
+```
+
+_If you don't pass a port, it will default to 9339_
+
+To turn off the route, you can use:
+
+```bash
+furi http stop
+```
 
 ### HTTP API Reference
 
