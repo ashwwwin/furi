@@ -191,7 +191,7 @@ httpCommand
     await httpStatus(lines);
   });
 
-const metaCommand = new Command("meta").description("MCP Aggregator Commands");
+const metaCommand = new Command("meta").description("MCP Aggregator");
 
 metaCommand
   .command("start")
