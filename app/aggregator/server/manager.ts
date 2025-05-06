@@ -116,8 +116,8 @@ export const createServer = async (): Promise<any> => {
 
     return new Promise((resolve, reject) => {
       const serverFilePath = path.resolve(
-        process.cwd(),
-        "app/aggregator/server/main.ts"
+        process.env.BASE_PATH || process.env.HOME || process.cwd(),
+        ".furikake/app/aggregator/server/main.ts"
       );
 
       const timeout = setTimeout(() => {

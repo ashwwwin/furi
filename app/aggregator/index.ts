@@ -1,7 +1,7 @@
-import { startMCPAggregatorServer } from "./start";
-import { stopMCPAggregatorServer } from "./stop";
-import { restartMCPAggregatorServer } from "./restart";
-import aggregatorStatus from "./status";
+import { startMCPAggregatorServer } from "@/aggregator/start";
+import { stopMCPAggregatorServer } from "@/aggregator/stop";
+import { restartMCPAggregatorServer } from "@/aggregator/restart";
+import aggregatorStatus from "@/aggregator/status";
 
 export {
   startMCPAggregatorServer,

@@ -3,7 +3,7 @@ import {
   startToolsPolling,
   startServer,
   stopToolsPolling,
-} from "../helpers/server";
+} from "./server";
 
 // Get configuration from environment variables
 const port = parseInt(process.env.PORT || "9338", 10);

@@ -5,7 +5,7 @@ import {
   setPort,
   setTransportType,
   isServerRunning,
-} from "../server/manager";
+} from "@/aggregator/server/manager";
 
 export async function startMCPAggregatorServer(
   transportType: "sse" | "stdio" = "stdio",

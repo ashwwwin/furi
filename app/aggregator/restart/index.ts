@@ -5,7 +5,7 @@ import {
   getServer,
   setPort,
   setTransportType,
-} from "../server/manager";
+} from "@/aggregator/server/manager";
 import { createSpinner } from "nanospinner";
 
 export const restartMCPAggregatorServer = async () => {

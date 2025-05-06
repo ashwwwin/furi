@@ -1,9 +1,10 @@
-import { getEnvironmentVariables } from "./env";
-import { startMCP } from "./start";
-import { stopMCP } from "./stop";
-import { renameMCP } from "./rename";
-import { restartMCP } from "./restart";
-import { statusMCP } from "./status";
+import { getEnvironmentVariables } from "@/mcp/env";
+import { startMCP } from "@/mcp/start";
+import { stopMCP } from "@/mcp/stop";
+import { renameMCP } from "@/mcp/rename";
+import { restartMCP } from "@/mcp/restart";
+import { statusMCP } from "@/mcp/status";
+
 export {
   getEnvironmentVariables,
   startMCP,
