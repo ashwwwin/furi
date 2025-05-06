@@ -43,7 +43,7 @@ export const startMCPResponse = async (
 
     try {
       // Start the MCP with the provided environment variables
-      await startMCP(mcpName, envJson);
+      await startMCP(mcpName, envJson, true);
 
       return new Response(
         JSON.stringify({

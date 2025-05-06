@@ -6,7 +6,11 @@ import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import chalk from "chalk";
 
-export const startMCP = async (mcpName: string, envJson?: string) => {
+export const startMCP = async (
+  mcpName: string,
+  envJson?: string,
+  skipCheck?: boolean
+) => {
   let config: any;
   let initialEnv: Record<string, string> = {};
   let mcpConfig: any;
@@ -95,7 +99,7 @@ export const startMCP = async (mcpName: string, envJson?: string) => {
       let proceed = false;
       let exit = false;
 
-      while (!proceed && !exit) {
+      while (!proceed && !exit && !skipCheck) {
         const choice = await askQuestion(
           chalk.white(`\nWhat would you like to do?
      ${chalk.cyan("[1]")} Run anyway (not recommended)
