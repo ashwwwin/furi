@@ -1,6 +1,7 @@
 import * as git from "isomorphic-git";
 import http from "isomorphic-git/http/web";
 import * as fs from "fs";
+import { getInstalledPath } from "@/helpers/paths";
 
 type CloneRepoResult = {
   success: boolean;
@@ -11,13 +12,7 @@ export const cloneRepo = async (
   packageUrl: string
 ): Promise<CloneRepoResult> => {
   try {
-    const targetDir = process.env.BASE_PATH + ".furikake/installed";
-    if (!targetDir) {
-      return {
-        success: false,
-        error: "BASE_PATH environment variable is not set",
-      };
-    }
+    const targetDir = getInstalledPath();
 
     // Ensure target directory exists
     try {

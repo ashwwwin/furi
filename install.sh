@@ -278,7 +278,7 @@ install_app() {
   cat > "$BIN_DIR/furi" << EOF
 #!/usr/bin/env bash
 
-export BASE_PATH="\$HOME/"
+export BASE_PATH="\$HOME"
 
 BUN_CMD=""
 if command -v bun &> /dev/null; then
@@ -308,10 +308,6 @@ EOF
   cp -r "$TEMP_DIR/"* "$FURIKAKE_DIR/" &>/dev/null
   find "$TEMP_DIR" -type f -name ".*" -maxdepth 1 -exec cp {} "$FURIKAKE_DIR/" \; &>/dev/null || true
     
-  if [ ! -d "$FURIKAKE_DIR/.furikake" ]; then
-    mkdir -p "$FURIKAKE_DIR/.furikake" &>/dev/null
-  fi
-  
   if [ ! -f "$FURIKAKE_DIR/index.ts" ]; then
     show_error "Installation failed. Essential files not found."
   fi
@@ -344,7 +340,7 @@ install_pm2() {
     return 0
   fi
   
-  show_note "Installing PM2 process manager..."
+  show_note "Installing PM2"
   
   if command_exists npm; then
     npm install -g pm2 &>/dev/null || true

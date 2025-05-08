@@ -4,6 +4,7 @@ import { cloneRepo } from "./actions/cloneRepo";
 import { initializePackage } from "./actions/initializePackage";
 import { join } from "path";
 import { deletePackage } from "../remove/actions/deletePackage";
+import { getPackagePath, getInstalledPath } from "@/helpers/paths";
 
 export const addPackage = async (mcpName: string) => {
   const spinner = createSpinner(`[${mcpName}] Installing`);
@@ -14,11 +15,6 @@ export const addPackage = async (mcpName: string) => {
     const result = await validatePackage(mcpName);
 
     if (result.isInstalled) {
-      const basePath = process.env.BASE_PATH || "";
-      if (!basePath) {
-        throw new Error("BASE_PATH environment variable is not set");
-      }
-
       let alias: string | undefined = result.alias || undefined;
 
       return spinner.warn(
@@ -57,11 +53,20 @@ export const addPackage = async (mcpName: string) => {
       }
 
       spinner.warn(`[${mcpName}] Failed to build but downloaded`);
+
+      // Extract owner and repo name safely
+      const parts = mcpName.split("/");
+      const owner = parts[0] || "";
+      const repo = parts[1] || "";
+
+      // Use the installed path if we can't get owner and repo
+      const packagePath =
+        owner && repo
+          ? getPackagePath(owner, repo)
+          : join(getInstalledPath(), mcpName);
+
       console.log(
-        `     \x1b[2mYou can edit the package in ${join(
-          process.env.BASE_PATH + ".furikake/installed",
-          mcpName
-        )}\x1b[0m`
+        `     \x1b[2mYou can edit the package in ${packagePath}\x1b[0m`
       );
 
       return;
@@ -73,6 +78,9 @@ export const addPackage = async (mcpName: string) => {
     return spinner.error(`[${mcpName}] Failed to install`);
   } finally {
     spinner.stop();
-    process.exit(exitCode);
+    if (exitCode !== 0) {
+      // Optionally, if you need to ensure a non-zero exit code for scripting when errors occur:
+      // process.exitCode = exitCode; // This sets the exit code for when Bun exits naturally
+    }
   }
 };

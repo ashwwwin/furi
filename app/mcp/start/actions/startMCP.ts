@@ -1,17 +1,13 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import pm2 from "pm2";
+import { resolveFromFurikake } from "@/helpers/paths";
 
 export const startMCPCore = async (
   mcpName: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    const basePath = process.env.BASE_PATH || "";
-    if (!basePath) {
-      throw new Error("BASE_PATH environment variable is not set");
-    }
-
-    const configPath = join(basePath, ".furikake/configuration.json");
+    const configPath = resolveFromFurikake("configuration.json");
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
     // Check both root level and installed section for MCP configuration

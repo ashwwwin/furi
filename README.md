@@ -143,6 +143,7 @@ furi where
 You can use Furikake with any MCP client such as Cursor via the MCP Aggregator.
 
 Furi collects tools from all running MCPs and exposes them through a single server. It is an SSE endpoint that your app or mcp client can subscribe to.
+Furi collects tools from all running MCPs and exposes them through an SSE endpoint that your app or mcp client can subscribe to.
 
 To start the aggregator server:
 

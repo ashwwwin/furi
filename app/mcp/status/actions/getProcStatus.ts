@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import pm2 from "pm2";
+import { resolveFromFurikake } from "@/helpers/paths";
 
 export function formatUptime(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -36,12 +37,7 @@ export const getProcStatus = async (
   data?: MCPStatus[] | MCPStatus;
 }> => {
   try {
-    const basePath = process.env.BASE_PATH || "";
-    if (!basePath) {
-      throw new Error("BASE_PATH environment variable is not set");
-    }
-
-    const configPath = join(basePath, ".furikake/configuration.json");
+    const configPath = resolveFromFurikake("configuration.json");
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
     // Check if specific MCP exists in either root or installed section

@@ -2,8 +2,6 @@
 import chalk from "chalk";
 import pm2 from "pm2";
 import fs from "fs";
-import path from "path";
-import os from "os";
 import { $ } from "bun";
 import { formatUptime } from "@/mcp/status/actions/getProcStatus";
 import { displayStatus } from "@/mcp/status/actions/displayStatus";

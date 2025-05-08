@@ -1,6 +1,11 @@
 import { join } from "path";
 import { existsSync } from "node:fs";
 import { stopMCPCore } from "@/mcp/stop/actions/stopMCP";
+import {
+  getPackagePath,
+  resolveFromFurikake,
+  getInstalledPath,
+} from "@/helpers/paths";
 
 type DeletePackageResult = {
   success: boolean;
@@ -11,15 +16,7 @@ export const deletePackage = async (
   mcpName: string
 ): Promise<DeletePackageResult> => {
   try {
-    const basePath = process.env.BASE_PATH;
-    if (!basePath) {
-      return {
-        success: false,
-        message: "BASE_PATH environment variable is not set",
-      };
-    }
-
-    const configPath = join(basePath, ".furikake/configuration.json");
+    const configPath = resolveFromFurikake("configuration.json");
     const configFile = Bun.file(configPath);
     const configExists = await configFile.exists();
     let config: Record<
@@ -74,7 +71,16 @@ export const deletePackage = async (
     }
 
     if (mcpName.split("/").length === 2) {
-      packageSourcePath = join(basePath, ".furikake/installed", mcpName);
+      const parts = mcpName.split("/");
+      const owner = parts[0] || "";
+      const repo = parts[1] || "";
+
+      if (owner && repo) {
+        packageSourcePath = getPackagePath(owner, repo);
+      } else {
+        // Fallback to using join with the installed path
+        packageSourcePath = join(getInstalledPath(), mcpName);
+      }
     }
 
     if (!packageSourcePath) {

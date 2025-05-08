@@ -1,6 +1,12 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import pm2 from "pm2";
+import {
+  resolveFromFurikake,
+  getBasePath,
+  resolveFromBase,
+} from "@/helpers/paths";
+import { isAbsolute } from "path";
 
 // Types for MCP client and transport
 export interface McpClient {
@@ -107,20 +113,38 @@ export const getPackageConfig = (
   cmd: string;
   cmdArgs: string[];
 } => {
-  const basePath = process.env.BASE_PATH || "";
-  if (!basePath) {
-    throw new Error("BASE_PATH environment variable is not set");
-  }
-
-  const configPath = join(basePath, ".furikake/configuration.json");
+  const configPath = resolveFromFurikake("configuration.json");
   const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
-  // Check both root level and installed section for MCP configuration
   const mcpConfig =
     config[mcpName] || (config.installed && config.installed[mcpName]);
 
-  const cwdRelative = mcpConfig?.source || `.furikake/installed/${mcpName}`;
-  const cwdAbsolute = join(basePath, cwdRelative);
+  if (!mcpConfig) {
+    throw new Error(`[${mcpName}] Configuration not found in getPackageConfig`);
+  }
+
+  let cwdAbsolute: string;
+  if (mcpConfig.source) {
+    cwdAbsolute = mcpConfig.source;
+    if (!isAbsolute(cwdAbsolute)) {
+      console.warn(
+        `[${mcpName}] mcpConfig.source was not an absolute path. Resolving from base. Source: ${cwdAbsolute}`
+      );
+      cwdAbsolute = resolveFromBase(cwdAbsolute);
+    }
+  } else {
+    console.warn(
+      `[${mcpName}] mcpConfig.source is not defined. Falling back to default installed path structure.`
+    );
+    const parts = mcpName.split("/");
+    const owner = parts[0];
+    const repo = parts[1];
+    if (owner && repo) {
+      cwdAbsolute = resolveFromBase(".furikake", "installed", owner, repo);
+    } else {
+      cwdAbsolute = resolveFromBase(".furikake", "installed", mcpName);
+    }
+  }
 
   // Prepare environment variables
   const env: Record<string, string> = {};

@@ -2,6 +2,12 @@ import { createSpinner } from "nanospinner";
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import pm2 from "pm2";
+import {
+  resolveFromFurikake,
+  resolveFromBase,
+  getPackagePath,
+} from "@/helpers/paths";
+import { isAbsolute } from "path";
 
 // Connect to PM2
 const connectToPm2 = async (): Promise<void> => {
@@ -42,13 +48,8 @@ export const renameMCP = async (currentName: string, newName: string) => {
   spinner.start();
 
   try {
-    const basePath = process.env.BASE_PATH || "";
-    if (!basePath) {
-      throw new Error("BASE_PATH environment variable is not set");
-    }
-
     // Read the configuration.json file
-    const configPath = join(basePath, ".furikake/configuration.json");
+    const configPath = resolveFromFurikake("configuration.json");
     let config;
 
     try {
@@ -165,7 +166,29 @@ export const renameMCP = async (currentName: string, newName: string) => {
 
           const runCommand = newMcpConfig.run || "npm run start";
           const [cmd, ...args] = runCommand.split(" ");
-          const cwd = newMcpConfig.source || `.furikake/installed/${newName}`;
+
+          let cwd: string;
+          if (newMcpConfig.source) {
+            cwd = newMcpConfig.source; // Should be absolute
+            if (!isAbsolute(cwd)) {
+              console.warn(
+                `[${newName}] newMcpConfig.source in rename was not absolute. Resolving from base. Source: ${cwd}`
+              );
+              cwd = resolveFromBase(cwd);
+            }
+          } else {
+            console.warn(
+              `[${newName}] newMcpConfig.source is not defined in rename. Falling back to default installed path structure.`
+            );
+            const parts = newName.split("/");
+            const owner = parts[0];
+            const repo = parts[1];
+            if (owner && repo) {
+              cwd = getPackagePath(owner, repo);
+            } else {
+              cwd = resolveFromBase(".furikake", "installed", newName);
+            }
+          }
 
           // Prepare environment variables
           const env: Record<string, string> = {};

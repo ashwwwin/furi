@@ -1,5 +1,6 @@
 import pm2 from "pm2";
 import path from "path";
+import { resolveFromBase } from "@/helpers/paths";
 
 const appName = "furi-aggregator-server";
 export let port: number = 9338;
@@ -115,8 +116,7 @@ export const createServer = async (): Promise<any> => {
     await connectToPM2();
 
     return new Promise((resolve, reject) => {
-      const serverFilePath = path.resolve(
-        process.env.BASE_PATH || process.env.HOME || process.cwd(),
+      const serverFilePath = resolveFromBase(
         ".furikake/app/aggregator/server/main.ts"
       );
 

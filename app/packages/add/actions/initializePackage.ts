@@ -1,7 +1,7 @@
 import { join, relative, dirname } from "path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { getPackagePath, resolveFromFurikake } from "@/helpers/paths";
 import yaml from "js-yaml";
-
 type PackageOutput = {
   success: boolean;
   message: string;
@@ -22,14 +22,6 @@ export const initializePackage = async (
   mcpName: string
 ): Promise<PackageOutput> => {
   try {
-    const basePath = process.env.BASE_PATH;
-    if (!basePath) {
-      return {
-        success: false,
-        message: "BASE_PATH environment variable is not set",
-      };
-    }
-
     // Get the package path
     const parts = mcpName.split("/");
     const [author, repo] = parts;
@@ -41,12 +33,7 @@ export const initializePackage = async (
       };
     }
 
-    const packagePath = join(
-      basePath as string,
-      ".furikake/installed",
-      author,
-      repo
-    );
+    const packagePath = getPackagePath(author, repo);
     const packageExists = existsSync(packagePath);
 
     if (!packageExists) {
@@ -388,45 +375,80 @@ try {
     }
 
     // Update configuration.json
-    const configPath = join(basePath as string, ".furikake/configuration.json");
+    const configPath = resolveFromFurikake("configuration.json");
     const configExists = existsSync(configPath);
     let config: Record<string, any> = {};
+    let configReadError = false;
 
     try {
       if (configExists) {
         try {
           const configContent = readFileSync(configPath, "utf-8");
-          // Only try to parse if there's actual content
           if (configContent.trim()) {
             config = JSON.parse(configContent);
           }
         } catch (parseError) {
+          configReadError = true;
           console.warn(
-            `Invalid configuration file, creating a new one: ${
+            `[${mcpName}] initializePackage: Invalid configuration file at ${configPath}, will attempt to overwrite. Error: ${
               parseError instanceof Error
                 ? parseError.message
                 : String(parseError)
             }`
           );
+          // config remains {}
         }
       }
 
-      // Ensure installed property exists
       if (!config.installed) {
         config.installed = {};
       }
 
-      // Add package to installed section
       config.installed[mcpName] = {
         run: finalRunCommand,
         source: packagePath,
       };
 
-      writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+      try {
+        writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+        console.log(
+          `[${mcpName}] initializePackage: Successfully wrote to ${configPath}`
+        ); // Debug log
+      } catch (writeError) {
+        console.error(
+          `[${mcpName}] initializePackage: CRITICAL - Failed to write configuration to ${configPath}. Error: ${
+            writeError instanceof Error
+              ? writeError.message
+              : String(writeError)
+          }`
+        );
+        return {
+          success: false,
+          message: `CRITICAL: Failed to write configuration for ${mcpName}. Error: ${
+            writeError instanceof Error
+              ? writeError.message
+              : String(writeError)
+          }`,
+        };
+      }
+
+      if (configReadError) {
+        // If there was a read error but write succeeded, it's a partial success.
+        // The original message about initialization should probably still be primary.
+        console.warn(
+          `[${mcpName}] initializePackage: Configuration file was corrupt but has been successfully overwritten.`
+        );
+      }
     } catch (error) {
+      // This outer catch is for any unexpected error in the config update block itself, not fs operations.
+      console.error(
+        `[${mcpName}] initializePackage: Unexpected error during configuration update logic. Error: ${
+          error instanceof Error ? error.message : String(error)
+        }`
+      );
       return {
         success: false,
-        message: `Failed to update configuration: ${
+        message: `Unexpected error during configuration update for ${mcpName}: ${
           error instanceof Error ? error.message : String(error)
         }`,
       };

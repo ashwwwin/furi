@@ -22,6 +22,7 @@ import {
   restartMCPAggregatorServer,
   aggregatorStatus,
 } from "@/aggregator";
+import { getBasePath, getFurikakePath } from "@/helpers/paths";
 
 const program = new Command();
 
@@ -148,10 +149,20 @@ program
 program
   .command("where")
   .description("Show the path to the .furikake directory")
-  .action(() => {
-    console.log(
-      `Furikake is stored in: \n     \x1b[2m${process.env.BASE_PATH}.furikake/\x1b[0m`
-    );
+  .option("-j, --json", "Output the path in JSON format")
+  .action((options) => {
+    if (options.json) {
+      console.log(
+        JSON.stringify({
+          basePath: getBasePath(),
+          furikakePath: getFurikakePath(),
+        })
+      );
+    } else {
+      console.log(
+        `Furikake is stored in: \n     \x1b[2m${getFurikakePath()}\x1b[0m`
+      );
+    }
   });
 
 const httpCommand = new Command("http").description("HTTP API");

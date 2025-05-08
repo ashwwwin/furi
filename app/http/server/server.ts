@@ -1,5 +1,6 @@
 import pm2 from "pm2";
 import path from "path";
+import { resolveFromBase } from "@/helpers/paths";
 
 const appName = "furi-http-server";
 export let port: number = 9339;
@@ -68,10 +69,7 @@ export const createServer = async (exposeSudo = false): Promise<any> => {
         return;
       }
 
-      const serverFilePath = path.resolve(
-        process.cwd(),
-        "app/http/server/routes.ts"
-      );
+      const serverFilePath = resolveFromBase("app/http/server/routes.ts");
 
       pm2.start(
         {

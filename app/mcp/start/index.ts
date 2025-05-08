@@ -5,6 +5,7 @@ import readline from "readline";
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import chalk from "chalk";
+import { resolveFromFurikake } from "@/helpers/paths";
 
 export const startMCP = async (
   mcpName: string,
@@ -14,13 +15,9 @@ export const startMCP = async (
   let config: any;
   let initialEnv: Record<string, string> = {};
   let mcpConfig: any;
-  const basePath = process.env.BASE_PATH || "";
-  const configPath = join(basePath, ".furikake/configuration.json");
+  const configPath = resolveFromFurikake("configuration.json");
 
   try {
-    if (!basePath) {
-      throw new Error("BASE_PATH environment variable is not set");
-    }
     config = JSON.parse(readFileSync(configPath, "utf-8"));
 
     // Check both root level and installed section for MCP configuration
