@@ -32,6 +32,14 @@ furi
 
 _Furikake uses Bun under the hood, the install script will install Bun if it is not already installed._
 
+### Upgrade Furikake
+
+To upgrade Furikake to the latest version, run:
+
+```bash
+furi upgrade
+```
+
 ## How to use
 
 ### Manage MCPs
@@ -142,8 +150,7 @@ furi where
 
 You can use Furikake with any MCP client such as Cursor via the MCP Aggregator.
 
-Furi collects tools from all running MCPs and exposes them through a single server. It is an SSE endpoint that your app or mcp client can subscribe to.
-Furi collects tools from all running MCPs and exposes them through an SSE endpoint that your app or mcp client can subscribe to.
+Furi collects tools from all running MCPs and exposes them through an SSE endpoint that your app or mcp client can subscribe to. The aggregator automatically builds the list of tools from all running MCPs and listens for new tools as MCPs are started and stopped.
 
 To start the aggregator server:
 

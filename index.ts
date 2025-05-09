@@ -22,6 +22,7 @@ import {
   restartMCPAggregatorServer,
   aggregatorStatus,
 } from "@/aggregator";
+import { upgradeFuri } from "@/upgrade";
 import { getBasePath, getFurikakePath } from "@/helpers/paths";
 
 const program = new Command();
@@ -154,7 +155,6 @@ program
     if (options.json) {
       console.log(
         JSON.stringify({
-          basePath: getBasePath(),
           furikakePath: getFurikakePath(),
         })
       );
@@ -242,4 +242,12 @@ metaCommand
 
 program.addCommand(httpCommand);
 program.addCommand(metaCommand);
+
+program
+  .command("upgrade")
+  .description("Upgrade Furikake to the latest version")
+  .action(async () => {
+    await upgradeFuri();
+  });
+
 program.parse(process.argv);
