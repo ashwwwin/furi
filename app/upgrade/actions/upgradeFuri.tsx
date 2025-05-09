@@ -1,5 +1,5 @@
 import { $ } from "bun";
-import { resolveFromBase } from "@/helpers/paths";
+import { resolveFromFurikake } from "@/helpers/paths";
 
 const RemotePackageJSON = "https://raw.githubusercontent.com/ashwwwin/furi/main/package.json";
 const InstallScriptURL = "https://furikake.app/install";
@@ -27,7 +27,7 @@ function isValidPackageJson(pkg: unknown): pkg is { version?: string } {
 // Get the local package version
 export async function getLocalPackageVersion(): Promise<VersionedActionResult> {
   try {
-    const packageJsonPath = resolveFromBase("package.json");
+    const packageJsonPath = resolveFromFurikake("package.json");
     const rawPkg = await Bun.file(packageJsonPath).json();
     if (isValidPackageJson(rawPkg) && typeof rawPkg.version === "string") {
       return {
