@@ -389,13 +389,13 @@ try {
           }
         } catch (parseError) {
           configReadError = true;
-          console.warn(
-            `[${mcpName}] initializePackage: Invalid configuration file at ${configPath}, will attempt to overwrite. Error: ${
-              parseError instanceof Error
-                ? parseError.message
-                : String(parseError)
-            }`
-          );
+          // console.warn(
+          //   `[${mcpName}] initializePackage: Invalid configuration file at ${configPath}, will attempt to overwrite. Error: ${
+          //     parseError instanceof Error
+          //       ? parseError.message
+          //       : String(parseError)
+          //   }`
+          // );
           // config remains {}
         }
       }
@@ -411,17 +411,17 @@ try {
 
       try {
         writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
-        console.log(
-          `[${mcpName}] initializePackage: Successfully wrote to ${configPath}`
-        ); // Debug log
+        // console.log(
+        //   `[${mcpName}] initializePackage: Successfully wrote to ${configPath}`
+        // ); // Debug log
       } catch (writeError) {
-        console.error(
-          `[${mcpName}] initializePackage: CRITICAL - Failed to write configuration to ${configPath}. Error: ${
-            writeError instanceof Error
-              ? writeError.message
-              : String(writeError)
-          }`
-        );
+        // console.error(
+        //   `[${mcpName}] initializePackage: CRITICAL - Failed to write configuration to ${configPath}. Error: ${
+        //     writeError instanceof Error
+        //       ? writeError.message
+        //       : String(writeError)
+        //   }`
+        // );
         return {
           success: false,
           message: `CRITICAL: Failed to write configuration for ${mcpName}. Error: ${
@@ -435,17 +435,17 @@ try {
       if (configReadError) {
         // If there was a read error but write succeeded, it's a partial success.
         // The original message about initialization should probably still be primary.
-        console.warn(
-          `[${mcpName}] initializePackage: Configuration file was corrupt but has been successfully overwritten.`
-        );
+        // console.warn(
+        //   `[${mcpName}] initializePackage: Configuration file was corrupt but has been successfully overwritten.`
+        // );
       }
     } catch (error) {
       // This outer catch is for any unexpected error in the config update block itself, not fs operations.
-      console.error(
-        `[${mcpName}] initializePackage: Unexpected error during configuration update logic. Error: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      // console.error(
+      //   `[${mcpName}] initializePackage: Unexpected error during configuration update logic. Error: ${
+      //     error instanceof Error ? error.message : String(error)
+      //   }`
+      // );
       return {
         success: false,
         message: `Unexpected error during configuration update for ${mcpName}: ${
