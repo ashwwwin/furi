@@ -81,7 +81,7 @@ export async function upgradeFuri() {
     }
 
     // Execute upgrade
-    spinner.start(`\nUpgrading Furikake`);
+    spinner.start(`Upgrading Furikake`);
     const upgradeResult = await executeUpgrade();
 
     return upgradeResult.success
