@@ -62,7 +62,7 @@ export async function upgradeFuri() {
       // Local version is newer than remote - confirm before downgrading
       spinner.stop();
       process.stdout.write(
-        `\nFuri on your machine (${localVersion}) is newer than the latest stable release (${remoteVersion}).\n     Downgrade? (y/n)?`
+        `\nFuri on your machine (v${localVersion}) is newer than the latest stable release (v${remoteVersion}).\n     Downgrade? (y/n)?`
       );
 
       // Read user input
@@ -77,7 +77,7 @@ export async function upgradeFuri() {
       }
     } else {
       // Remote version is newer - proceed automatically without confirmation
-      spinner.success(`Update available: ${localVersion} → ${remoteVersion}`);
+      spinner.success(`Update available: v${localVersion} → v${remoteVersion}`);
     }
 
     // Execute upgrade

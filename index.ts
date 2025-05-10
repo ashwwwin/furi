@@ -24,13 +24,14 @@ import {
 } from "@/aggregator";
 import { upgradeFuri } from "@/upgrade";
 import { getBasePath, getFurikakePath } from "@/helpers/paths";
+import { version } from "./package.json";
 
 const program = new Command();
 
 program
   .name("furi")
   .summary("Furikake is a CLI & API for MCP management and execution")
-  .version("0.1.0")
+  .version(version)
   .addHelpText(
     "before",
     `\x1b[2m🍃 Furikake
