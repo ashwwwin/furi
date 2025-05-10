@@ -58,25 +58,7 @@ export async function upgradeFuri() {
     if (versionComparison === 0) {
       // Already on latest version - just show success and exit
       return spinner.success(`Already on the latest version: v${localVersion}`);
-    } else if (versionComparison > 0) {
-      // Local version is newer than remote - confirm before downgrading
-      spinner.stop();
-      process.stdout.write(
-        `\nFuri on your machine (v${localVersion}) is newer than the latest stable release (v${remoteVersion}).\n     Downgrade? (y/n)?`
-      );
-
-      // Read user input
-      let input = "";
-      for await (const line of console) {
-        input = line;
-        break;
-      }
-
-      if (input.trim().toLowerCase() !== "y") {
-        return spinner.warn(`Upgrade cancelled`);
-      }
     } else {
-      // Remote version is newer - proceed automatically without confirmation
       spinner.success(`Update available: v${localVersion} → v${remoteVersion}`);
     }
 
