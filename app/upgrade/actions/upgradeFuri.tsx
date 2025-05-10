@@ -84,35 +84,34 @@ export async function getRemotePackageVersion(): Promise<VersionedActionResult> 
 
 // Compare semantic versions
 export function compareVersions(v1: string, v2: string): number {
-  // Parse version components as numbers
-  const v1Parts = v1.split('.').map(part => {
-    const num = parseInt(part, 10);
-    return isNaN(num) ? 0 : num;
-  });
+  // Split versions into segments
+  const v1Parts = v1.split('.');
+  const v2Parts = v2.split('.');
   
-  const v2Parts = v2.split('.').map(part => {
-    const num = parseInt(part, 10);
-    return isNaN(num) ? 0 : num;
-  });
-  
-  // Normalize version parts to ensure they have the same length
+  // Get the maximum number of segments to compare
   const maxLength = Math.max(v1Parts.length, v2Parts.length);
-  const normalizedV1Parts = [...v1Parts];
-  const normalizedV2Parts = [...v2Parts];
   
-  while (normalizedV1Parts.length < maxLength) normalizedV1Parts.push(0);
-  while (normalizedV2Parts.length < maxLength) normalizedV2Parts.push(0);
-  
-  // Compare each component
+  // Compare each segment
   for (let i = 0; i < maxLength; i++) {
-    const part1 = normalizedV1Parts[i] ?? 0;
-    const part2 = normalizedV2Parts[i] ?? 0;
+    // Default to "0" if segment doesn't exist
+    const v1Part = i < v1Parts.length ? (v1Parts[i] ?? "0") : "0";
+    const v2Part = i < v2Parts.length ? (v2Parts[i] ?? "0") : "0";
     
-    if (part1 > part2) return 1;
-    if (part1 < part2) return -1;
+    // Convert to numbers for comparison
+    const v1Num = parseInt(v1Part, 10);
+    const v2Num = parseInt(v2Part, 10);
+    
+    // Handle NaN values
+    const v1Value = isNaN(v1Num) ? 0 : v1Num;
+    const v2Value = isNaN(v2Num) ? 0 : v2Num;
+    
+    // Compare the segments
+    if (v1Value > v2Value) return 1;
+    if (v1Value < v2Value) return -1;
   }
   
-  return 0; // Versions are equal
+  // If all segments are equal, versions are equal
+  return 0;
 }
 
 // Execute the actual upgrade process
