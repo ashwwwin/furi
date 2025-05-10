@@ -1,0 +1,7 @@
+.gitattributes
+.gitignore
+README.md
+LICENSE
+install.sh
+./tests
+.cleanup

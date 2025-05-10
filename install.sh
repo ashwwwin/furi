@@ -24,7 +24,7 @@ REPO_BRANCH="main"
 REPO_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}"
 
 # Progress bar variables
-STEPS=6
+STEPS=7
 current_step=0
 progress_bar_width=40
 TEMP_DIR=""
@@ -361,6 +361,43 @@ install_pm2() {
   show_error "Could not install PM2, which is required for Furikake. Please install it manually with: bun add -g pm2"
 }
 
+cleanup_additional_files() {
+  # Check for either .cleanup or @.cleanup file
+  CLEANUP_FILE=""
+  if [ -f "$FURIKAKE_DIR/.cleanup" ]; then
+    CLEANUP_FILE="$FURIKAKE_DIR/.cleanup"
+  elif [ -f "$FURIKAKE_DIR/@.cleanup" ]; then
+    CLEANUP_FILE="$FURIKAKE_DIR/@.cleanup"
+  fi
+  
+  if [ -n "$CLEANUP_FILE" ]; then
+    show_note "Cleaning up additional files"
+    
+    while IFS= read -r line || [[ -n "$line" ]]; do
+      # Skip empty lines and comments
+      [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+      
+      # Trim whitespace
+      line=$(echo "$line" | xargs)
+      
+      # Check if path is absolute or relative
+      if [[ "$line" == /* ]]; then
+        target_path="$line"
+      else
+        target_path="$FURIKAKE_DIR/$line"
+      fi
+      
+      if [ -e "$target_path" ]; then
+        if [ -d "$target_path" ]; then
+          rm -rf "$target_path" &>/dev/null || show_note "Failed to remove directory: $line"
+        else
+          rm -f "$target_path" &>/dev/null || show_note "Failed to remove file: $line"
+        fi
+      fi
+    done < "$CLEANUP_FILE"
+  fi
+}
+
 main() {
   clear
   echo -e "${CYAN}${BOLD}Furikake Installer${NC}"
@@ -395,6 +432,9 @@ main() {
   
   show_progress "Installing PM2"
   install_pm2
+  
+  show_progress "Performing cleanup"
+  cleanup_additional_files
   
   echo -ne "\r\033[K\n"
   
