@@ -40,17 +40,21 @@ export const startHttpServer = async (port: number, exposeSudo = false) => {
     await createServer(exposeSudo);
 
     spinner.success({ text: "HTTP API server started" });
+    console.log(
+      `     \x1b[2mHTTP API server running on http://127.0.0.1:${port}\x1b[0m`,
+    );
     if (exposeSudo) {
-      console.log(`\x1b[31mNotice: Admin routes are exposed via HTTP\x1b[0m`);
+      console.log(`\n\x1b[31mNotice: Admin routes are exposed via HTTP\x1b[0m`);
     } else {
       console.log(
-        `HTTP API server running\n\x1b[2mNotice: No Admin routes are exposed via HTTP\x1b[0m`
+        `\n\x1b[2mNotice: No Admin routes are exposed via HTTP\x1b[0m`,
       );
     }
   } catch (error: any) {
+    console.log(error);
     spinner.error({
       text: `Failed to start HTTP API server: ${
-        error.message || "Unknown error"
+        error.toString() || "Unknown error"
       }`,
     });
     return null;

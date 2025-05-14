@@ -226,7 +226,7 @@ All API endpoints follow a standardized JSON response format:
   ```json
   {
     "success": true,
-    "data": {"theResponseVariesByEndpoint"}
+    "data": {"The response varies by endpoint"}
   }
   ```
 

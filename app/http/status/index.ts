@@ -7,7 +7,7 @@ import { formatUptime } from "@/mcp/status/actions/getProcStatus";
 import { displayStatus } from "@/mcp/status/actions/displayStatus";
 
 const getHttpServerLogs = async (
-  lines: number = 15
+  lines: number = 15,
 ): Promise<{ output: string; error: string }> => {
   try {
     const appName = "furi-http-server";
@@ -156,7 +156,7 @@ export const getHttpServerStatus = async (lines: number = 15) => {
       }
 
       console.log(
-        `\n\x1b[2mTo see more lines use: furi http status --lines <number>\x1b[0m`
+        `\n\x1b[2mTo see more lines use: furi http status --lines <number>\x1b[0m`,
       );
     } catch (err) {
       console.log(`\n\x1b[33mError retrieving logs: ${err}\x1b[0m`);
@@ -166,11 +166,11 @@ export const getHttpServerStatus = async (lines: number = 15) => {
       chalk.red(
         `Failed to get HTTP API server status: ${
           error.message || String(error)
-        }`
-      )
+        }`,
+      ),
     );
   } finally {
-    await pm2.disconnect();
+    pm2.disconnect();
     process.exit(0);
   }
 };

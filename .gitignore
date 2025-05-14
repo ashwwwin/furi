@@ -132,3 +132,5 @@ dist
 # Installed MCPs
 .furikake
 .furikake/*
+
+.DS_Store
