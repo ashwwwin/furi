@@ -4,6 +4,9 @@
   "version": "0.1.03",
   "type": "module",
   "private": true,
+  "scripts": {
+    "compile": "bun build --compile --minify --sourcemap --bytecode ./index.ts --outfile dist/furi"
+  },
   "bin": {
     "furi": "./index.ts"
   },
