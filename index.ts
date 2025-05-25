@@ -61,8 +61,9 @@ program
     `\x1b[2m🍃 Furikake
 CLI & API for MCP management and execution
 
-https://furikake.app
-https://github.com/ashwwwin/furi\n\x1b[0m`
+https://furi.so
+https://github.com/ashwwwin/furi
+https://discord.com/invite/B8vAfRkdXS\n\x1b[0m`
   )
   .showHelpAfterError()
   .showSuggestionAfterError();
