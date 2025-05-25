@@ -1,4 +1,4 @@
-import { resolveFromFurikake } from "@/helpers/paths";
+import { resolveFromBase } from "@/helpers/paths";
 
 type EnvironmentVariablesOutput = {
   variables: string[];
@@ -493,7 +493,7 @@ async function scanFileForEnvVars(
 }
 
 export const getEnv = async (mcpName: string) => {
-  const configPath = resolveFromFurikake("configuration.json");
+  const configPath = resolveFromBase("configuration.json");
   const config = Bun.file(configPath);
   const configJson = await config.json();
 

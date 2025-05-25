@@ -15,8 +15,7 @@ export const extractMcpName = (
         JSON.stringify({
           success: false,
           message: "Invalid repo details in add route",
-        }),
-        { status: 400 }
+        })
       );
     }
   }
@@ -25,14 +24,20 @@ export const extractMcpName = (
   if (page === "call") {
     const callIndex = pathParts.indexOf("call");
     if (callIndex === -1) {
-      return new Response(`Could not find 'call' segment in path "${url}"`, {
-        status: 400,
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: `Could not find 'call' segment in path "${url}"`,
+        })
+      );
     }
     if (callIndex === 0) {
-      return new Response(`MCP name missing before 'call' in path "${url}"`, {
-        status: 400,
-      });
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: `Could not resolve mcp name for page "${page}" from path "${url}"`,
+        })
+      );
     }
     // Join the parts before 'call' to form the mcpName
     const mcpNameStr = pathParts.slice(0, callIndex).join("/");
@@ -42,8 +47,10 @@ export const extractMcpName = (
   // Handle original cases like /<mcpName>/remove or /<author>/<repo>/remove
   if (pathParts.length < 2 || pathParts[pathParts.length - 1] !== page) {
     return new Response(
-      `Could not resolve mcp name for page "${page}" from path "${url}"`,
-      { status: 404 }
+      JSON.stringify({
+        success: false,
+        message: `Could not resolve mcp name for page "${page}" from path "${url}"`,
+      })
     );
   }
 
@@ -58,13 +65,17 @@ export const extractMcpName = (
     // Only apply this check if it's not one of the handled <mcpName>/<page> or <author>/<repo>/<page> formats
     if (pathParts.length < 2 || pathParts[pathParts.length - 1] !== page) {
       return new Response(
-        `Could not resolve mcp name for page "${page}" from path "${url}"`,
-        { status: 404 }
+        JSON.stringify({
+          success: false,
+          message: `Unexpected path structure for page "${page}": "${url}"`,
+        })
       );
     }
     return new Response(
-      `Unexpected path structure for page "${page}": "${url}"`,
-      { status: 400 }
+      JSON.stringify({
+        success: false,
+        message: `Unexpected path structure for page "${page}": "${url}"`,
+      })
     );
   }
 

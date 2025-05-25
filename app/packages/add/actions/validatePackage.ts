@@ -8,11 +8,7 @@ type DetectRepoResult = {
 
 import { join } from "path";
 import { existsSync } from "node:fs";
-import {
-  getFurikakePath,
-  getPackagePath,
-  resolveFromFurikake,
-} from "@/helpers/paths";
+import { getPackagePath, resolveFromBase } from "@/helpers/paths";
 
 export const validatePackage = async (
   mcpName: string
@@ -46,7 +42,7 @@ export const validatePackage = async (
   result.isInstalled = existsSync(packagePath);
 
   // Get the alias from the configuration file
-  const configPath = resolveFromFurikake("configuration.json");
+  const configPath = resolveFromBase("configuration.json");
   const configFile = Bun.file(configPath);
   const configExists = await configFile.exists();
   if (configExists) {

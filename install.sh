@@ -225,7 +225,8 @@ download_code() {
     git clone --quiet --depth=1 --branch "$REPO_BRANCH" "$REPO_URL.git" "$TEMP_DIR/repo" 2>/dev/null
     if [ -d "$TEMP_DIR/repo" ] && [ -f "$TEMP_DIR/repo/package.json" ]; then
       cp -r "$TEMP_DIR/repo/"* "$TEMP_DIR/" 2>/dev/null
-      cp -r "$TEMP_DIR/repo/."* "$TEMP_DIR/" 2>/dev/null || true
+      find "$TEMP_DIR/repo" -maxdepth 1 -name ".*" -type f -exec cp {} "$TEMP_DIR/" \; 2>/dev/null || true
+      find "$TEMP_DIR/repo" -maxdepth 1 -name ".*" -type d -not -name ".furikake" -exec cp -r {} "$TEMP_DIR/" \; 2>/dev/null || true
       rm -rf "$TEMP_DIR/repo"
       DOWNLOAD_SUCCESS=true
     fi
@@ -239,7 +240,8 @@ download_code() {
       DIR_NAME="$REPO_NAME-$REPO_BRANCH"
       if [ -d "$TEMP_DIR/$DIR_NAME" ] && [ -f "$TEMP_DIR/$DIR_NAME/package.json" ]; then
         cp -r "$TEMP_DIR/$DIR_NAME/"* "$TEMP_DIR/" 2>/dev/null
-        cp -r "$TEMP_DIR/$DIR_NAME/."* "$TEMP_DIR/" 2>/dev/null || true
+        find "$TEMP_DIR/$DIR_NAME" -maxdepth 1 -name ".*" -type f -exec cp {} "$TEMP_DIR/" \; 2>/dev/null || true
+        find "$TEMP_DIR/$DIR_NAME" -maxdepth 1 -name ".*" -type d -not -name ".furikake" -exec cp -r {} "$TEMP_DIR/" \; 2>/dev/null || true
         rm -rf "$TEMP_DIR/$DIR_NAME"
         DOWNLOAD_SUCCESS=true
       fi
@@ -254,7 +256,9 @@ download_code() {
       DIR_NAME="$REPO_NAME-$REPO_BRANCH"
       if [ -d "$TEMP_DIR/$DIR_NAME" ] && [ -f "$TEMP_DIR/$DIR_NAME/package.json" ]; then
         cp -r "$TEMP_DIR/$DIR_NAME/"* "$TEMP_DIR/" 2>/dev/null
-        cp -r "$TEMP_DIR/$DIR_NAME/."* "$TEMP_DIR/" 2>/dev/null || true
+        # Copy hidden files but exclude .furikake directory
+        find "$TEMP_DIR/$DIR_NAME" -maxdepth 1 -name ".*" -type f -exec cp {} "$TEMP_DIR/" \; 2>/dev/null || true
+        find "$TEMP_DIR/$DIR_NAME" -maxdepth 1 -name ".*" -type d -not -name ".furikake" -exec cp -r {} "$TEMP_DIR/" \; 2>/dev/null || true
         rm -rf "$TEMP_DIR/$DIR_NAME"
         DOWNLOAD_SUCCESS=true
       fi
@@ -278,7 +282,7 @@ install_app() {
   cat > "$BIN_DIR/furi" << EOF
 #!/usr/bin/env bash
 
-export BASE_PATH="\$HOME"
+export BASE_PATH="\$HOME/.furikake"
 
 BUN_CMD=""
 if command -v bun &> /dev/null; then
@@ -305,8 +309,15 @@ EOF
   chmod +x "$BIN_DIR/furi" &>/dev/null || 
     show_error "Failed to make the executable script. Check permissions and try again."
   
-  cp -r "$TEMP_DIR/"* "$FURIKAKE_DIR/" &>/dev/null
-  find "$TEMP_DIR" -type f -name ".*" -maxdepth 1 -exec cp {} "$FURIKAKE_DIR/" \; &>/dev/null || true
+  # Copy files but exclude the .furikake directory to prevent nested structure
+  find "$TEMP_DIR" -maxdepth 1 -type f -exec cp {} "$FURIKAKE_DIR/" \; 2>/dev/null
+  find "$TEMP_DIR" -maxdepth 1 -type d -not -name ".*" -not -path "$TEMP_DIR" -exec cp -r {} "$FURIKAKE_DIR/" \; 2>/dev/null
+  find "$TEMP_DIR" -maxdepth 1 -name ".*" -type f -exec cp {} "$FURIKAKE_DIR/" \; 2>/dev/null || true
+  
+  # Remove any nested .furikake directory that might have been copied
+  if [ -d "$FURIKAKE_DIR/.furikake" ]; then
+    rm -rf "$FURIKAKE_DIR/.furikake" &>/dev/null || true
+  fi
     
   if [ ! -f "$FURIKAKE_DIR/index.ts" ]; then
     show_error "Installation failed. Essential files not found."

@@ -1,6 +1,6 @@
 import { join, relative, dirname } from "path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { getPackagePath, resolveFromFurikake } from "@/helpers/paths";
+import { getPackagePath, resolveFromBase } from "@/helpers/paths";
 import yaml from "js-yaml";
 type PackageOutput = {
   success: boolean;
@@ -375,7 +375,7 @@ try {
     }
 
     // Update configuration.json
-    const configPath = resolveFromFurikake("configuration.json");
+    const configPath = resolveFromBase("configuration.json");
     const configExists = existsSync(configPath);
     let config: Record<string, any> = {};
     let configReadError = false;

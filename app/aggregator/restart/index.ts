@@ -7,6 +7,7 @@ import {
   setTransportType,
 } from "@/aggregator/server/manager";
 import { createSpinner } from "nanospinner";
+import { getAggregatorPort } from "@/helpers/config";
 
 export const restartMCPAggregatorServer = async () => {
   const spinner = createSpinner("Restarting MCP Aggregator server").start();
@@ -39,11 +40,15 @@ export const restartMCPAggregatorServer = async () => {
     // Set defaults if server info couldn't be retrieved
     const currentTransportType =
       serverInfo?.pm2_env?.env?.TRANSPORT_TYPE || "stdio";
-    const currentPort = serverInfo?.pm2_env?.env?.PORT || "9338";
+    const currentPort = serverInfo?.pm2_env?.env?.PORT;
 
     try {
       if (currentPort) {
         setPort(parseInt(currentPort, 10));
+      } else {
+        // Fall back to saved configuration if current port can't be retrieved
+        const savedPort = getAggregatorPort();
+        setPort(savedPort);
       }
 
       if (currentTransportType) {
@@ -89,8 +94,10 @@ export const restartMCPAggregatorServer = async () => {
       text: "MCP Aggregator server restarted",
     });
 
+    // Use the actual port for display
+    const displayPort = currentPort || getAggregatorPort();
     console.log(
-      `     \x1b[2mAggregator running on http://127.0.0.1:${currentPort}/sse`
+      `     \x1b[2mAggregator running on http://127.0.0.1:${displayPort}/sse`
     );
   } catch (error: any) {
     spinner.error({

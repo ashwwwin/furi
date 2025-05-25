@@ -23,8 +23,32 @@ import {
   aggregatorStatus,
 } from "@/aggregator";
 import { upgradeFuri } from "@/upgrade";
-import { getBasePath, getFurikakePath } from "@/helpers/paths";
+import { getBasePath } from "@/helpers/paths";
+import {
+  getHttpPort,
+  saveHttpPort,
+  getAggregatorPort,
+  saveAggregatorPort,
+} from "@/helpers/config";
 import { version } from "./package.json";
+import { jsonifyResponse } from "@/helpers/jsonify";
+import {
+  addResponse,
+  removeResponse,
+  listResponse,
+  startMCPResponse,
+  stopResponse,
+  restartResponse,
+  statusResponse,
+  singleStatusResponse,
+  singleToolsResponse,
+  toolsResponse,
+  callResponse,
+} from "@/http/server";
+import { envResponse } from "@/http/server/endpoints/[mcpName]/env";
+import { httpStatusResponse } from "@/http/server/endpoints/http/status";
+import { renamePackage } from "@/mcp/rename/action/renamePackage";
+import { renameMCPResponse } from "@/http/server/endpoints/[mcpName]/rename";
 
 const program = new Command();
 
@@ -43,41 +67,56 @@ https://github.com/ashwwwin/furi\n\x1b[0m`
   .showHelpAfterError()
   .showSuggestionAfterError();
 
-// Set a default action if no command is specified
-if (process.argv.length <= 2) {
-  process.argv.push("--help");
-}
-
 program
   .command("add")
   .description("Install a new MCP server")
   .argument("<mcpName>", "MCP name")
-  .action((mcpName) => {
-    addPackage(mcpName);
+  .option("-j, --json", "JSON output")
+  .action((mcpName, options) => {
+    if (options.json) {
+      jsonifyResponse(() => addResponse(`/add/${mcpName}`));
+    } else {
+      addPackage(mcpName);
+    }
   });
 
 program
   .command("remove")
   .description("Remove an installed MCP server")
   .argument("<mcpName>", "MCP name")
-  .action((mcpName) => {
-    removePackage(mcpName);
+  .option("-j, --json", "JSON output")
+  .action((mcpName, options) => {
+    if (options.json) {
+      jsonifyResponse(() => removeResponse(`/remove/${mcpName}`));
+    } else {
+      removePackage(mcpName);
+    }
   });
 
 program
   .command("list")
   .description("List all installed MCP servers")
   .option("-d, --details", "Show detailed status information")
+  .option("-j, --json", "JSON output")
   .action((options) => {
-    listPackages(options.details);
+    if (options.json) {
+      jsonifyResponse(() => listResponse(options.details));
+    } else {
+      listPackages(options.details);
+    }
   });
 
 program
   .command("env")
   .description("Get environment variables for the MCP server")
   .argument("<mcpName>", "MCP name")
-  .action((mcpName) => {
-    getEnvironmentVariables(mcpName);
+  .option("-j, --json", "JSON output")
+  .action((mcpName, options) => {
+    if (options.json) {
+      jsonifyResponse(() => envResponse(`${mcpName}/env`));
+    } else {
+      getEnvironmentVariables(mcpName);
+    }
   });
 
 program
@@ -88,24 +127,41 @@ program
     "-e, --env <json>",
     'Environment variables as JSON string: \'{"key":"value"}\''
   )
+  .option("-j, --json", "JSON output")
   .action((mcpName, options) => {
-    startMCP(mcpName, options.env);
+    if (options.json) {
+      jsonifyResponse(() =>
+        startMCPResponse(`${mcpName}/start`, options.env, true)
+      );
+    } else {
+      startMCP(mcpName, options.env);
+    }
   });
 
 program
   .command("stop")
   .description("Stop an MCP server")
   .argument("<mcpName>", "MCP name")
-  .action((mcpName) => {
-    stopMCP(mcpName);
+  .option("-j, --json", "JSON output")
+  .action((mcpName, options) => {
+    if (options.json) {
+      jsonifyResponse(() => stopResponse(`${mcpName}/stop`));
+    } else {
+      stopMCP(mcpName);
+    }
   });
 
 program
   .command("restart")
   .description("Restart an MCP server")
   .argument("<mcpName>", "MCP name")
-  .action((mcpName) => {
-    restartMCP(mcpName);
+  .option("-j, --json", "JSON output")
+  .action((mcpName, options) => {
+    if (options.json) {
+      jsonifyResponse(() => restartResponse(`${mcpName}/restart`));
+    } else {
+      restartMCP(mcpName);
+    }
   });
 
 program
@@ -117,8 +173,22 @@ program
     "Number of log lines to show (for single MCP)",
     "15"
   )
+  .option("-j, --json", "JSON output")
   .action((mcpName, options) => {
-    statusMCP(mcpName, options.lines);
+    if (options.json) {
+      if (mcpName === "all") {
+        jsonifyResponse(() => statusResponse());
+      } else {
+        jsonifyResponse(() =>
+          singleStatusResponse(
+            `${mcpName}/status`,
+            new URL(`http://localhost/${mcpName}/status?lines=${options.lines}`)
+          )
+        );
+      }
+    } else {
+      statusMCP(mcpName, options.lines);
+    }
   });
 
 program
@@ -126,16 +196,38 @@ program
   .description("Rename an alias in the configuration")
   .argument("<currentName>", "Current name/alias")
   .argument("<newName>", "New name/alias")
-  .action((currentName, newName) => {
-    renameMCP(currentName, newName);
+  .option("-j, --json", "JSON output")
+  .action((currentName, newName, options) => {
+    if (options.json) {
+      jsonifyResponse(() =>
+        renameMCPResponse(`${currentName}/rename`, undefined, newName)
+      );
+    } else {
+      renameMCP(currentName, newName);
+    }
   });
 
 program
   .command("tools")
   .description("List all tools for an MCP server")
   .argument("[mcpName]", "MCP Name (defaults to 'all' to show all MCPs)", "all")
-  .action((mcpName) => {
-    listTools(mcpName);
+  .option("-j, --json", "JSON output")
+  .action((mcpName, options) => {
+    if (options.json) {
+      if (!mcpName || mcpName === "all") {
+        jsonifyResponse(() => toolsResponse()).then(() => {
+          process.exit(0);
+        });
+      } else {
+        jsonifyResponse(() => singleToolsResponse(`${mcpName}/tools`)).then(
+          () => {
+            process.exit(0);
+          }
+        );
+      }
+    } else {
+      listTools(mcpName);
+    }
   });
 
 program
@@ -143,9 +235,14 @@ program
   .description("Call a tool")
   .argument("<mcpName>", "MCP name")
   .argument("<toolName>", "Tool name")
-  .argument("<data>", "Data")
-  .action((mcpName, toolName, data) => {
-    callTool(mcpName, toolName, data);
+  .argument("<data>", "Data as JSON string")
+  .option("-j, --json", "JSON output")
+  .action((mcpName, toolName, data, options) => {
+    if (options.json) {
+      jsonifyResponse(() => callResponse(`${mcpName}/call/${toolName}`, data));
+    } else {
+      callTool(mcpName, toolName, data);
+    }
   });
 
 program
@@ -156,12 +253,12 @@ program
     if (options.json) {
       console.log(
         JSON.stringify({
-          furikakePath: getFurikakePath(),
+          furikakePath: getBasePath(),
         })
       );
     } else {
       console.log(
-        `Furikake is stored in: \n     \x1b[2m${getFurikakePath()}\x1b[0m`
+        `Furikake is stored in: \n     \x1b[2m${getBasePath()}\x1b[0m`
       );
     }
   });
@@ -171,16 +268,26 @@ const httpCommand = new Command("http").description("HTTP API");
 httpCommand
   .command("start")
   .description("Start the HTTP API server")
-  .option("-p, --port <port>", "Port number", "9339")
+  .option("-p, --port <port>", "Port number")
   .option("--sudo", "Expose sudo routes", false)
+  .option("-j, --json", "JSON output")
   .action(async (options) => {
-    const port = parseInt(options.port || "9339");
+    let port: number;
+
+    if (options.port) {
+      port = parseInt(options.port);
+      saveHttpPort(port);
+    } else {
+      port = getHttpPort();
+    }
+
     await startHttpServer(port, options.sudo);
   });
 
 httpCommand
   .command("stop")
   .description("Stop the HTTP API server")
+  .option("-j, --json", "JSON output")
   .action(async () => {
     await stopHttpServer();
   });
@@ -190,6 +297,7 @@ httpCommand
   .description(
     "Restart the running HTTP API server (preserves --sudo and port settings)"
   )
+  .option("-j, --json", "JSON output")
   .action(async () => {
     await restartHttpServer();
   });
@@ -197,10 +305,17 @@ httpCommand
 httpCommand
   .command("status")
   .description("Show the status of the HTTP API server")
-  .option("--lines <number>", "Number of log lines to show", "15")
+  .option("-l, --lines <number>", "Number of log lines to show", "15")
+  .option("-j, --json", "JSON output")
   .action(async (options) => {
-    const lines = parseInt(options.lines, 10);
-    await httpStatus(lines);
+    if (options.json) {
+      jsonifyResponse(() =>
+        httpStatusResponse(undefined, parseInt(options.lines, 10))
+      );
+    } else {
+      const lines = parseInt(options.lines, 10);
+      await httpStatus(lines);
+    }
   });
 
 const metaCommand = new Command("meta").description("MCP Aggregator");
@@ -209,11 +324,20 @@ metaCommand
   .command("start")
   .description("Starts the MCP aggregation server")
   // .option("-t, --transport <transport>", "Transport type", "sse")
-  .option("-p, --port <port>", "Port number", "9338")
+  .option("-p, --port <port>", "Port number")
   .action((options) => {
     // const transport = options.transport || "sse";
     const transport = "sse";
-    const port = parseInt(options.port, 10);
+    let port: number;
+
+    if (options.port) {
+      // Port explicitly provided, use it and save to config
+      port = parseInt(options.port);
+      saveAggregatorPort(port);
+    } else {
+      // No port provided, read from config or use default
+      port = getAggregatorPort();
+    }
 
     startMCPAggregatorServer(transport, port);
   });
@@ -221,6 +345,7 @@ metaCommand
 metaCommand
   .command("stop")
   .description("Stops the Meta MCP Aggregator server")
+  .option("-j, --json", "JSON output")
   .action(async () => {
     await stopMCPAggregatorServer();
   });
@@ -228,6 +353,7 @@ metaCommand
 metaCommand
   .command("restart")
   .description("Restarts the Meta MCP Aggregator server")
+  .option("-j, --json", "JSON output")
   .action(async () => {
     await restartMCPAggregatorServer();
   });
@@ -236,6 +362,7 @@ metaCommand
   .command("status")
   .description("Shows the status of the Meta MCP Aggregator server")
   .option("-l, --lines <lines>", "Number of log lines to show", "15")
+  .option("-j, --json", "JSON output")
   .action(async (options) => {
     const lines = parseInt(options.lines, 10);
     await aggregatorStatus(lines);
@@ -251,4 +378,12 @@ program
     await upgradeFuri();
   });
 
-program.parse(process.argv);
+// Only run CLI parsing when this file is executed directly, not when imported
+if (import.meta.main) {
+  // Set a default action if no command is specified
+  if (process.argv.length <= 2) {
+    process.argv.push("--help");
+  }
+
+  program.parse(process.argv);
+}

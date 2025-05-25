@@ -2,7 +2,7 @@
 
 import { callResponse } from "./endpoints/[mcpName]/call";
 import { removeResponse } from "./endpoints/[mcpName]/remove";
-import { specificToolsResponse } from "./endpoints/[mcpName]/tools";
+import { singleToolsResponse } from "./endpoints/[mcpName]/tools";
 import { addResponse } from "./endpoints/add";
 import { listResponse } from "./endpoints/list";
 import { statusResponse } from "./endpoints/status";
@@ -11,6 +11,9 @@ import { singleStatusResponse } from "./endpoints/[mcpName]/status";
 import { stopResponse } from "./endpoints/[mcpName]/stop";
 import { restartResponse } from "./endpoints/[mcpName]/restart";
 import { startMCPResponse } from "./endpoints/[mcpName]/start";
+import { envResponse } from "./endpoints/[mcpName]/env";
+import { httpStatusResponse } from "./endpoints/http/status";
+import { renameMCPResponse } from "./endpoints/[mcpName]/rename";
 
 const PORT = parseInt(process.env.PORT || "9339");
 
@@ -66,7 +69,7 @@ const server = Bun.serve({
     // eg. /mcpName/tools
     // Returns a list of tools for an MCP
     if (url.pathname.endsWith("/tools")) {
-      return specificToolsResponse(url.pathname);
+      return singleToolsResponse(url.pathname);
     }
 
     // eg. /mcpName/call/toolName
@@ -84,9 +87,13 @@ const server = Bun.serve({
     ////////////////////////////////////////////////////////////////////////////
 
     // eg. /status
-    // Returns a list of all MCPs with details(running and stopped)
+    // Returns a list of all MCPs with details (running and stopped)
     if (url.pathname === "/status") {
       return statusResponse();
+    }
+
+    if (url.pathname.endsWith("/rename")) {
+      return renameMCPResponse(url.pathname, url);
     }
 
     // eg. /add/author/repo
@@ -99,6 +106,12 @@ const server = Bun.serve({
     // Removes an MCP by name
     if (url.pathname.endsWith("/remove")) {
       return removeResponse(url.pathname);
+    }
+
+    // eg. /mcpName/env
+    // Returns the environment variables for an MCP
+    if (url.pathname.endsWith("/env")) {
+      return envResponse(url.pathname);
     }
 
     // eg. /mcpName/status (?lines=10, get the status + logs of an MCP)
@@ -123,6 +136,12 @@ const server = Bun.serve({
     // Starts an MCP by name
     if (url.pathname.endsWith("/start")) {
       return startMCPResponse(url.pathname, req);
+    }
+
+    // eg. /http/status
+    // Returns the status of the HTTP server
+    if (url.pathname.endsWith("/http/status")) {
+      return httpStatusResponse(url);
     }
 
     return new Response(

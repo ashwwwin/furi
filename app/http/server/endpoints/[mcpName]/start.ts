@@ -11,7 +11,8 @@ const formatError = (error: any): string => {
 
 export const startMCPResponse = async (
   pathname: string,
-  req: Request
+  req: Request,
+  skipEnv?: boolean
 ): Promise<Response> => {
   try {
     // Extract MCP name from pathname using the utility function
@@ -24,20 +25,21 @@ export const startMCPResponse = async (
     // Get environment variables from request body if provided
     let envJson: string | undefined;
 
-    if (req.method === "POST") {
-      try {
-        const body = (await req.json()) as Record<string, unknown>;
-        if (Object.keys(body).length > 0) {
-          envJson = JSON.stringify(body);
+    if (!skipEnv) {
+      if (req.method === "POST") {
+        try {
+          const body = (await req.json()) as Record<string, unknown>;
+          if (Object.keys(body).length > 0) {
+            envJson = JSON.stringify(body);
+          }
+        } catch (error) {
+          return new Response(
+            JSON.stringify({
+              success: false,
+              message: `Invalid request body: ${formatError(error)}`,
+            })
+          );
         }
-      } catch (error) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            message: `Invalid request body: ${formatError(error)}`,
-          }),
-          { status: 400, headers: { "Content-Type": "application/json" } }
-        );
       }
     }
 
@@ -51,16 +53,14 @@ export const startMCPResponse = async (
           message: `MCP ${mcpName} started successfully${
             envJson ? " with provided environment variables" : ""
           }`,
-        }),
-        { status: 200, headers: { "Content-Type": "application/json" } }
+        })
       );
     } catch (startError) {
       return new Response(
         JSON.stringify({
           success: false,
           message: `Failed to start MCP: ${formatError(startError)}`,
-        }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
+        })
       );
     }
   } catch (error) {
@@ -69,8 +69,7 @@ export const startMCPResponse = async (
       JSON.stringify({
         success: false,
         message: `Server error: ${formatError(error)}`,
-      }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      })
     );
   }
 };

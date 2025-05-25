@@ -1,45 +1,36 @@
-import { setupMcpConnection } from "@/helpers/mcpConnectionManager";
-import { getTools } from "@/tools/list/actions/getTools";
-import { listResponse } from "./list";
+import { getToolsFromAllMcps } from "@/tools/list/actions/getTools";
 
 export const toolsResponse = async () => {
-  const list = await listResponse();
+  try {
+    const mcpResults = await getToolsFromAllMcps();
 
-  const listData = await list.json();
+    let tools: any = [];
 
-  if (!Array.isArray(listData)) {
-    return new Response(
-      JSON.stringify({ success: false, message: "Failed to get MCPs" })
-    );
-  }
-
-  let tools: any = [];
-  for (const mcp of listData) {
-    const resources = await setupMcpConnection(mcp);
-
-    if (!resources || !resources.client) {
-      continue;
+    for (const mcpResult of mcpResults) {
+      if (mcpResult.success && mcpResult.tools) {
+        mcpResult.tools.forEach((tool: any) => {
+          tools.push({
+            name: tool.name,
+            description: tool.description,
+            inputSchema: tool.inputSchema,
+            mcpName: mcpResult.mcpName,
+          });
+        });
+      }
     }
 
-    const { client } = resources;
-
-    // Fetch tools using the action
-    const toolsResult = await getTools(client);
-
-    toolsResult.tools.map((tool: any) => {
-      tools.push({
-        name: tool.name,
-        description: tool.description,
-        inputSchema: tool.inputSchema,
-        mcpName: mcp,
-      });
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        data: tools,
+      })
+    );
+  } catch (error: any) {
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: error.message || "Failed to get tools",
+      })
+    );
   }
-
-  return new Response(
-    JSON.stringify({
-      success: true,
-      data: tools,
-    })
-  );
 };

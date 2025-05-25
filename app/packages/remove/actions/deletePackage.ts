@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { stopMCPCore } from "@/mcp/stop/actions/stopMCP";
 import {
   getPackagePath,
-  resolveFromFurikake,
+  resolveFromBase,
   getInstalledPath,
 } from "@/helpers/paths";
 
@@ -16,7 +16,7 @@ export const deletePackage = async (
   mcpName: string
 ): Promise<DeletePackageResult> => {
   try {
-    const configPath = resolveFromFurikake("configuration.json");
+    const configPath = resolveFromBase("configuration.json");
     const configFile = Bun.file(configPath);
     const configExists = await configFile.exists();
     let config: Record<

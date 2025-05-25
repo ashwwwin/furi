@@ -101,7 +101,7 @@ export const getToolsFromAllMcps = async (
 
     const allResults: McpToolsResult[] = [];
 
-    // Process each MCP using the single MCP function
+    // Process each MCP sequentially to avoid connection conflicts
     for (const mcp of onlineMcps) {
       const result = await getToolsFromMcp(mcp, spinner);
       allResults.push(result);

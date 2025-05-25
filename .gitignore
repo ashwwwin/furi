@@ -130,8 +130,12 @@ dist
 .pnp.*
 
 # Installed MCPs
+installed
+configuration.json
 .furikake
 .furikake/*
 
+
 .DS_Store
 furi
+

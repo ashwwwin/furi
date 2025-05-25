@@ -116,9 +116,7 @@ export const createServer = async (): Promise<any> => {
     await connectToPM2();
 
     return new Promise((resolve, reject) => {
-      const serverFilePath = resolveFromBase(
-        ".furikake/app/aggregator/server/main.ts"
-      );
+      const serverFilePath = resolveFromBase("/app/aggregator/server/main.ts");
 
       const timeout = setTimeout(() => {
         pm2.disconnect();
@@ -135,7 +133,8 @@ export const createServer = async (): Promise<any> => {
           },
           exec_mode: "fork",
           watch: false,
-          max_memory_restart: "200M", // Restart if memory exceeds 200MB
+          interpreter: "bun",
+          max_memory_restart: "200M",
         },
         (err, apps: any) => {
           clearTimeout(timeout);

@@ -1,11 +1,6 @@
 import { readFileSync } from "fs";
-import { join } from "path";
 import pm2 from "pm2";
-import {
-  resolveFromFurikake,
-  getBasePath,
-  resolveFromBase,
-} from "@/helpers/paths";
+import { resolveFromBase, getBasePath } from "@/helpers/paths";
 import { isAbsolute } from "path";
 
 // Types for MCP client and transport
@@ -113,7 +108,7 @@ export const getPackageConfig = (
   cmd: string;
   cmdArgs: string[];
 } => {
-  const configPath = resolveFromFurikake("configuration.json");
+  const configPath = resolveFromBase("configuration.json");
   const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
   const mcpConfig =
@@ -127,22 +122,22 @@ export const getPackageConfig = (
   if (mcpConfig.source) {
     cwdAbsolute = mcpConfig.source;
     if (!isAbsolute(cwdAbsolute)) {
-      console.warn(
-        `[${mcpName}] mcpConfig.source was not an absolute path. Resolving from base. Source: ${cwdAbsolute}`
-      );
+      // console.warn(
+      //   `[${mcpName}] mcpConfig.source was not an absolute path. Resolving from base. Source: ${cwdAbsolute}`
+      // );
       cwdAbsolute = resolveFromBase(cwdAbsolute);
     }
   } else {
-    console.warn(
-      `[${mcpName}] mcpConfig.source is not defined. Falling back to default installed path structure.`
-    );
+    // console.warn(
+    //   `[${mcpName}] mcpConfig.source is not defined. Falling back to default installed path structure.`
+    // );
     const parts = mcpName.split("/");
     const owner = parts[0];
     const repo = parts[1];
     if (owner && repo) {
-      cwdAbsolute = resolveFromBase(".furikake", "installed", owner, repo);
+      cwdAbsolute = resolveFromBase("installed", owner, repo);
     } else {
-      cwdAbsolute = resolveFromBase(".furikake", "installed", mcpName);
+      cwdAbsolute = resolveFromBase("installed", mcpName);
     }
   }
 

@@ -1,11 +1,20 @@
 import { isPortFree } from "@/helpers/checkPort";
 import { createServer, setPort, isServerRunning } from "../server/server";
 import { createSpinner } from "nanospinner";
+import { getHttpPort, saveHttpPort } from "@/helpers/config";
 
-export const startHttpServer = async (port: number, exposeSudo = false) => {
+export const startHttpServer = async (_port: number, exposeSudo = false) => {
   const spinner = createSpinner("Starting HTTP API server").start();
 
   try {
+    let port = _port;
+
+    if (!port) {
+      port = getHttpPort();
+    } else {
+      saveHttpPort(port);
+    }
+
     const portInUse = await isPortFree(port);
     if (!portInUse) {
       spinner.error({
@@ -41,13 +50,13 @@ export const startHttpServer = async (port: number, exposeSudo = false) => {
 
     spinner.success({ text: "HTTP API server started" });
     console.log(
-      `     \x1b[2mHTTP API server running on http://127.0.0.1:${port}\x1b[0m`,
+      `     \x1b[2mHTTP API server running on http://127.0.0.1:${port}\x1b[0m`
     );
     if (exposeSudo) {
       console.log(`\n\x1b[31mNotice: Admin routes are exposed via HTTP\x1b[0m`);
     } else {
       console.log(
-        `\n\x1b[2mNotice: No Admin routes are exposed via HTTP\x1b[0m`,
+        `\n\x1b[2mNotice: No Admin routes are exposed via HTTP\x1b[0m`
       );
     }
   } catch (error: any) {

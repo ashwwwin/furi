@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 import { join } from "path";
 import pm2 from "pm2";
-import { resolveFromFurikake } from "@/helpers/paths";
+import { resolveFromBase } from "@/helpers/paths";
 
 export function formatUptime(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -37,7 +37,7 @@ export const getProcStatus = async (
   data?: MCPStatus[] | MCPStatus;
 }> => {
   try {
-    const configPath = resolveFromFurikake("configuration.json");
+    const configPath = resolveFromBase("configuration.json");
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
     // Check if specific MCP exists in either root or installed section
@@ -108,20 +108,13 @@ export const getProcStatus = async (
       );
 
       for (const configName of rootPackages) {
-        // Find the matching process by comparing the last part of the config name
-        const configBaseName = configName.split("/").pop() || configName;
-        const simplifiedConfigName = configBaseName
-          .replace(/-/g, "")
-          .toLowerCase();
+        // Use the same deterministic naming as everywhere else
+        const expectedProcessName = configName.replace("/", "-");
 
-        // Find a process match by comparing simplified names
-        const process = runningProcesses.find((p) => {
-          const simplifiedProcName = p.name.replace(/-/g, "").toLowerCase();
-          return (
-            simplifiedProcName.includes(simplifiedConfigName) ||
-            simplifiedConfigName.includes(simplifiedProcName)
-          );
-        });
+        // Find exact match by process name
+        const process = runningProcesses.find(
+          (p) => p.name === expectedProcessName
+        );
 
         if (process) {
           allMCPs.push({
@@ -147,19 +140,13 @@ export const getProcStatus = async (
           // Skip if already processed from root level
           if (rootPackages.includes(configName)) continue;
 
-          // Find the matching process
-          const configBaseName = configName.split("/").pop() || configName;
-          const simplifiedConfigName = configBaseName
-            .replace(/-/g, "")
-            .toLowerCase();
+          // Use the same deterministic naming as everywhere else
+          const expectedProcessName = configName.replace("/", "-");
 
-          const process = runningProcesses.find((p) => {
-            const simplifiedProcName = p.name.replace(/-/g, "").toLowerCase();
-            return (
-              simplifiedProcName.includes(simplifiedConfigName) ||
-              simplifiedConfigName.includes(simplifiedProcName)
-            );
-          });
+          // Find exact match by process name
+          const process = runningProcesses.find(
+            (p) => p.name === expectedProcessName
+          );
 
           if (process) {
             allMCPs.push({
@@ -186,28 +173,11 @@ export const getProcStatus = async (
       };
     } else {
       // For a specific MCP, try to find it in the PM2 processes
-      const pmName = `furi_${
-        mcpName.split("/").pop()?.replace(/-/g, "") || mcpName
-      }`;
+      // Use the same naming convention as everywhere else in the codebase
+      const processName = `furi_${mcpName.replace("/", "-")}`;
 
-      // Find process with more flexible matching
-      const process = processList.find((proc) => {
-        // Direct match first
-        if (proc.name === `furi_${mcpName}`) return true;
-
-        // Then try simplified name match
-        const simplifiedProcName = proc.name
-          .replace("furi_", "")
-          .replace(/-/g, "")
-          .toLowerCase();
-        const simplifiedMcpName =
-          mcpName.split("/").pop()?.replace(/-/g, "").toLowerCase() || "";
-
-        return (
-          simplifiedProcName.includes(simplifiedMcpName) ||
-          simplifiedMcpName.includes(simplifiedProcName)
-        );
-      });
+      // Find process with exact match (should be deterministic now)
+      const process = processList.find((proc) => proc.name === processName);
 
       if (!process) {
         // If the process is not found in PM2 but exists in config, show it as offline

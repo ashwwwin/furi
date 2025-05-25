@@ -6,6 +6,7 @@ import {
   setPort,
 } from "@/http/server/server";
 import { createSpinner } from "nanospinner";
+import { getHttpPort } from "@/helpers/config";
 
 export const restartHttpServer = async () => {
   const spinner = createSpinner("Restarting HTTP API server").start();
@@ -28,6 +29,10 @@ export const restartHttpServer = async () => {
 
     if (currentPort) {
       setPort(parseInt(currentPort, 10));
+    } else {
+      // Fall back to saved configuration if current port can't be retrieved
+      const savedPort = getHttpPort();
+      setPort(savedPort);
     }
 
     // Stop the server

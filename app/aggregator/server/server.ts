@@ -2,6 +2,8 @@ import { FastMCP } from "fastmcp";
 import { z } from "zod";
 import { setupMcpConnection } from "@/helpers/mcpConnectionManager";
 import { getTools } from "@/tools/list/actions/getTools";
+import { getProcStatus } from "@/mcp/status/actions/getProcStatus";
+import { disconnectFromPm2 } from "@/helpers/mcpConnectionManager";
 
 // Define types for tool structure
 type ToolSchema = {
@@ -24,13 +26,6 @@ type McpToolGroup = {
 // Helper function to fetch tools from all configured MCP servers
 async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
   try {
-    // Get list of all MCPs using getProcStatus
-    const { getProcStatus } = await import(
-      "@/mcp/status/actions/getProcStatus"
-    );
-    const { disconnectFromPm2 } = await import(
-      "@/helpers/mcpConnectionManager"
-    );
     const result = await getProcStatus("all");
 
     // Always disconnect from PM2 after getting status
@@ -201,13 +196,6 @@ function startToolsPolling(intervalMs = 10000) {
 
   toolUpdateInterval = setInterval(async () => {
     try {
-      // Check for changes in the MCP list using getProcStatus
-      const { getProcStatus } = await import(
-        "@/mcp/status/actions/getProcStatus"
-      );
-      const { disconnectFromPm2 } = await import(
-        "@/helpers/mcpConnectionManager"
-      );
       const result = await getProcStatus("all");
 
       // Always disconnect from PM2 after getting status

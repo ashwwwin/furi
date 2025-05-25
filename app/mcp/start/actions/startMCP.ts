@@ -1,13 +1,14 @@
+import { createSpinner } from "nanospinner";
 import { readFileSync } from "fs";
 import { join } from "path";
 import pm2 from "pm2";
-import { resolveFromFurikake } from "@/helpers/paths";
+import { resolveFromBase } from "@/helpers/paths";
 
 export const startMCPCore = async (
   mcpName: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    const configPath = resolveFromFurikake("configuration.json");
+    const configPath = resolveFromBase("configuration.json");
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
     // Check both root level and installed section for MCP configuration
@@ -24,14 +25,39 @@ export const startMCPCore = async (
     const runCommand = mcpConfig.run || "npm run start";
     const [cmd, ...args] = runCommand.split(" ");
 
-    const cwd = mcpConfig.source || `.furikake/installed/${mcpName}`;
+    const cwd = mcpConfig.source || `installed/${mcpName}`;
 
-    // Initialize environment variables
+    // Initialize environment variables with a clean slate
     const env: Record<string, string> = {};
+
+    // Essential system environment variables
     if (process.env.PATH) env.PATH = process.env.PATH;
-    if (process.env.NODE_ENV) env.NODE_ENV = process.env.NODE_ENV;
     if (process.env.HOME) env.HOME = process.env.HOME;
     if (process.env.USER) env.USER = process.env.USER;
+    if (process.env.SHELL) env.SHELL = process.env.SHELL;
+    if (process.env.TMPDIR) env.TMPDIR = process.env.TMPDIR;
+    if (process.env.LANG) env.LANG = process.env.LANG;
+    if (process.env.LC_ALL) env.LC_ALL = process.env.LC_ALL;
+
+    // Node.js specific environment variables
+    if (process.env.NODE_ENV) env.NODE_ENV = process.env.NODE_ENV;
+    if (process.env.NODE_PATH) env.NODE_PATH = process.env.NODE_PATH;
+
+    // Bun specific environment variables
+    if (process.env.BUN_INSTALL) env.BUN_INSTALL = process.env.BUN_INSTALL;
+
+    // Package manager specific
+    if (process.env.npm_config_prefix)
+      env.npm_config_prefix = process.env.npm_config_prefix;
+
+    // Clean up any potentially problematic environment variables that might be inherited from the compiled executable
+    // Remove the '_' variable that points to the executable path as it can confuse child processes
+    delete env._;
+
+    // Ensure we don't inherit PM2 specific variables that might interfere
+    delete env.PM2_PROGRAMMATIC;
+    delete env.PM2_JSON_PROCESSING;
+    delete env.PM2_HOME;
 
     // Add environment variables from configuration
     if (mcpConfig?.env) {
@@ -71,6 +97,8 @@ export const startMCPCore = async (
           env: env,
           merge_logs: true,
           log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+          interpreter:
+            cmd === "npm" ? "node" : cmd === "bun" ? "bun" : undefined,
         },
         (err) => {
           if (err) {

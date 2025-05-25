@@ -49,10 +49,16 @@ export const callResponse = async (pathname: string, body: any) => {
     const client = resources.client;
 
     // 2. Prepare arguments for executeToolCall
-    // executeToolCall expects data as a string. Stringify the received body.
+    // executeToolCall expects data as a string. Handle both CLI (string) and HTTP (object) inputs.
     let dataString: string;
     try {
-      dataString = JSON.stringify(body);
+      // If body is already a string (from CLI usage), use it directly
+      if (typeof body === "string") {
+        dataString = body;
+      } else {
+        // If body is an object (from HTTP API), stringify it
+        dataString = JSON.stringify(body);
+      }
     } catch (e) {
       return new Response(
         JSON.stringify({

@@ -81,6 +81,7 @@ export const createServer = async (exposeSudo = false): Promise<any> => {
           },
           exec_mode: "fork",
           watch: false,
+          interpreter: "bun",
         },
         (err, apps: any) => {
           pm2.disconnect();

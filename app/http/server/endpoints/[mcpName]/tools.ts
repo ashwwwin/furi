@@ -2,7 +2,7 @@ import { setupMcpConnection } from "@/helpers/mcpConnectionManager";
 import { getTools } from "@/tools/list/actions/getTools";
 import { extractMcpName } from "../../utils";
 
-export const specificToolsResponse = async (pathname: string) => {
+export const singleToolsResponse = async (pathname: string) => {
   // Extract mcpName from pathname
   const mcpNameResult = extractMcpName(pathname, "tools");
   if (mcpNameResult instanceof Response) {

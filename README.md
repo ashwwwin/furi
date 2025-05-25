@@ -1,6 +1,6 @@
 ![image](https://github.com/user-attachments/assets/8f313cdd-0452-4227-8aea-75127d779f56)
 
-# 🍃 Furikake (or furi) (WIP)
+# 🍃 Furikake (or furi)
 
 Furikake is an easy to use, local CLI & API for MCP management and execution.
 
@@ -300,7 +300,9 @@ furi http start --sudo
 | `/<mcpName>/restart`   | GET    | Restart a specific MCP                       | None                                          | `{"success": true, "data": {"restarted": true}}`                                                                                      |
 | `/<mcpName>/start`     | POST   | Start a specific MCP                         | Environment variables as JSON in request body | `{"success": true, "data": {"started": true}}`                                                                                        |
 | `/<mcpName>/stop`      | GET    | Stop a specific MCP                          | None                                          | `{"success": true, "data": {"stopped": true}}`                                                                                        |
+| `/<mcpName>/rename`    | GET    | Rename a specific MCP                        | `?newName=<newName>` (required)               | `{"success": true, "message": "Renamed from oldName to newName"}` or `{"success": false, "message": "Error message"}`                 |
 | `/<mcpName>/remove`    | GET    | Delete a specific MCP                        | None                                          | `{"success": true, "data": {"removed": true}}`                                                                                        |
+| `/<mcpName>/env`       | GET    | Get environment variables for a specific MCP | None                                          | `{"success": true, "data": {"variables": ["key1", "key2"]}}`                                                                          |
 
 #### Example Usage:
 
@@ -338,6 +340,12 @@ Stop an MCP:
 
 ```bash
 curl http://localhost:9339/<mcpName>/stop
+```
+
+Rename an MCP:
+
+```bash
+curl "http://localhost:9339/<mcpName>/rename?newName=<newName>"
 ```
 
 Remove an MCP:

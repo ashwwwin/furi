@@ -1,21 +1,17 @@
 import { restartMCPCore } from "@/mcp/restart/actions/restartMCP";
+import { extractMcpName } from "../../utils"; // Import the utility function
 
 export const restartResponse = async (pathname: string) => {
-  // Extract mcpName from the path, e.g. /foo/restart => foo
-  const parts = pathname.split("/").filter(Boolean);
-  if (
-    parts.length !== 2 ||
-    typeof parts[0] !== "string" ||
-    parts[0].length === 0
-  ) {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        message: "Invalid path format for restart",
-      })
-    );
+  // Use extractMcpName to get the mcpName or an error Response
+  const mcpNameResult = extractMcpName(pathname, "restart");
+
+  // Handle potential Response error from mcpName extraction
+  if (mcpNameResult instanceof Response) {
+    return mcpNameResult;
   }
-  const mcpName = parts[0];
+
+  // If we got here, mcpNameResult is a string
+  const mcpName = mcpNameResult;
 
   const result = await restartMCPCore(mcpName);
   return new Response(JSON.stringify({ success: true, data: result }));
