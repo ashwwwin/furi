@@ -20,6 +20,19 @@ export function formatUptime(ms: number): string {
   }
 }
 
+export function formatMemory(bytes: number): string {
+  if (bytes < 1024 * 1024) {
+    // Less than 1MB, show in KB
+    return `${(bytes / 1024).toFixed(1)}kb`;
+  } else if (bytes < 1024 * 1024 * 1024) {
+    // Less than 1GB, show in MB
+    return `${(bytes / 1024 / 1024).toFixed(1)}mb`;
+  } else {
+    // 1GB or more, show in GB
+    return `${(bytes / 1024 / 1024 / 1024).toFixed(1)}gb`;
+  }
+}
+
 export interface MCPStatus {
   name: string;
   pid: number | string;
@@ -85,10 +98,8 @@ export const getProcStatus = async (
             name: mcpName,
             pid: proc.pid,
             status: proc.pm2_env?.status || "unknown",
-            memory: proc.monit?.memory
-              ? `${Math.round(proc.monit.memory / 1024 / 1024)}MB`
-              : "N/A",
-            cpu: proc.monit?.cpu ? `${proc.monit.cpu.toFixed(1)}%` : "N/A",
+            memory: proc.monit?.memory ? formatMemory(proc.monit.memory) : "0",
+            cpu: proc.monit?.cpu ? `${proc.monit.cpu.toFixed(1)}%` : "0%",
             uptime: proc.pm2_env?.pm_uptime
               ? formatUptime(Date.now() - proc.pm2_env.pm_uptime)
               : "N/A",
@@ -212,7 +223,7 @@ export const getProcStatus = async (
         pid: process.pid,
         status: process.pm2_env?.status || "unknown",
         memory: process.monit?.memory
-          ? `${Math.round(process.monit.memory / 1024 / 1024)}MB`
+          ? formatMemory(process.monit.memory)
           : "N/A",
         cpu: process.monit?.cpu ? `${process.monit.cpu.toFixed(1)}%` : "N/A",
         uptime: process.pm2_env?.pm_uptime

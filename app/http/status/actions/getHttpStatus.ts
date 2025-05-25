@@ -1,7 +1,7 @@
 import fs from "fs";
 import { $ } from "bun";
 import pm2 from "pm2";
-import { formatUptime } from "@/mcp/status/actions/getProcStatus";
+import { formatUptime, formatMemory } from "@/mcp/status/actions/getProcStatus";
 
 export interface HttpServerStatus {
   name: string;
@@ -57,7 +57,7 @@ const formatStatusData = (processInfo: any): HttpServerStatus => {
     pid: processInfo.pid || "N/A",
     status: processInfo.pm2_env?.status || "unknown",
     memory: processInfo.monit?.memory
-      ? `${Math.round(processInfo.monit.memory / 1024 / 1024)}MB`
+      ? formatMemory(processInfo.monit.memory)
       : "N/A",
     cpu: processInfo.monit?.cpu
       ? `${processInfo.monit.cpu.toFixed(1)}%`

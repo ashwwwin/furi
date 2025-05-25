@@ -2,7 +2,7 @@ import chalk from "chalk";
 import pm2 from "pm2";
 import fs from "fs";
 import { $ } from "bun";
-import { formatUptime } from "@/mcp/status/actions/getProcStatus";
+import { formatUptime, formatMemory } from "@/mcp/status/actions/getProcStatus";
 import { displayStatus } from "@/mcp/status/actions/displayStatus";
 
 // !!! Ensure this matches the server.ts app name !!!
@@ -162,7 +162,7 @@ export const getAggregatorServerStatus = async (lines: number = 15) => {
       pid: processInfo.pid || "N/A",
       status: processInfo.pm2_env?.status || "unknown",
       memory: processInfo.monit?.memory
-        ? `${Math.round(processInfo.monit.memory / 1024 / 1024)}MB`
+        ? formatMemory(processInfo.monit.memory)
         : "N/A",
       cpu: processInfo.monit?.cpu
         ? `${processInfo.monit.cpu.toFixed(1)}%`
