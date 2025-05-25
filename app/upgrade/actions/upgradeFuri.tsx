@@ -1,7 +1,7 @@
 import { $ } from "bun";
 import { resolveFromBase } from "@/helpers/paths";
 
-const RemotePackageJSON = "https://raw.githubusercontent.com/ashwwwin/furi/main/package.json";
+const RemotePackageJSON = "https://api.github.com/repos/ashwwwin/furi/contents/package.json";
 const InstallScriptURL = "https://furikake.app/install";
 
 // Common result type pattern
@@ -52,15 +52,37 @@ export async function getLocalPackageVersion(): Promise<VersionedActionResult> {
 // Get the remote package version
 export async function getRemotePackageVersion(): Promise<VersionedActionResult> {
   try {
-    const response = await fetch(RemotePackageJSON);
+    // Use GitHub API to avoid caching issues with raw.githubusercontent.com
+    const response = await fetch(RemotePackageJSON, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'User-Agent': 'Furikake-CLI-Upgrade-Check'
+      }
+    });
+    
     if (!response.ok) {
       return {
         success: false,
-        message: `GitHub request failed with status: ${response.status}`
+        message: `GitHub API request failed with status: ${response.status}`
       };
     }
     
-    const rawPkg = await response.json();
+    const apiResponse = await response.json();
+    
+    // GitHub API returns base64 encoded content
+    if (!apiResponse.content) {
+      return {
+        success: false,
+        message: "No content found in GitHub API response"
+      };
+    }
+    
+    // Decode base64 content
+    const decodedContent = atob(apiResponse.content.replace(/\s/g, ''));
+    const rawPkg = JSON.parse(decodedContent);
+    
     if (isValidPackageJson(rawPkg) && typeof rawPkg.version === "string") {
       return {
         success: true,
