@@ -78,8 +78,18 @@ const server = Bun.serve({
       return callResponse(url.pathname, await req.json());
     }
 
+    // eg. /isSudo
+    // Returns true if the server is running in sudo mode
+    if (url.pathname == "/isSudo") {
+      return new Response(
+        JSON.stringify({ success: true, isSudo: exposeSudoRoutes })
+      );
+    }
+
     if (!exposeSudoRoutes) {
-      return new Response("Not Found", { status: 404 });
+      return new Response(
+        JSON.stringify({ success: false, message: "Not Found" })
+      );
     }
 
     ////////////////////////////////////////////////////////////////////////////
