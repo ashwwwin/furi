@@ -254,6 +254,7 @@ program
     if (options.json) {
       console.log(
         JSON.stringify({
+          success: true,
           furikakePath: getBasePath(),
         })
       );
