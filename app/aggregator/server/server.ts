@@ -5,7 +5,6 @@ import { getTools } from "@/tools/list/actions/getTools";
 import { getProcStatus } from "@/mcp/status/actions/getProcStatus";
 import { disconnectFromPm2 } from "@/helpers/mcpConnectionManager";
 
-// Define types for tool structure
 type ToolSchema = {
   properties: Record<string, any>;
   required?: string[];
@@ -22,6 +21,31 @@ type McpToolGroup = {
   mcpName: string;
   tools: RemoteTool[];
 };
+
+// Helper function to ensure tool name doesn't exceed 60 characters (54 + "furi: " prefix)
+function createToolName(mcpName: string, toolName: string): string {
+  const combined = `${mcpName}-${toolName}`;
+  if (combined.length <= 55) {
+    return combined.replace("--", "-");
+  }
+
+  // If too long, truncate the MCP name while preserving the tool name
+  const maxMcpNameLength = 55 - toolName.length - 1; // -1 for the colon
+  if (maxMcpNameLength > 0) {
+    const result = `${mcpName.substring(0, maxMcpNameLength)}-${toolName}`;
+    return result.replace("--", "-");
+  }
+
+  // If tool name itself is too long, truncate both
+  // Reserve 1 character for the colon, split remaining 53 characters
+  const availableSpace = 55 - 1; // Reserve 1 for the colon
+  const halfSpace = Math.floor(availableSpace / 2);
+  const result = `${mcpName.substring(0, halfSpace)}-${toolName.substring(
+    0,
+    halfSpace
+  )}`;
+  return result.replace("--", "-");
+}
 
 // Helper function to fetch tools from all configured MCP servers
 async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
@@ -73,7 +97,7 @@ async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
         mcpTools.push({
           mcpName,
           tools: toolsResult.tools.map((tool: any) => ({
-            name: `${mcpName}/${tool.name}`,
+            name: createToolName(mcpName, tool.name),
             description: tool.description || `Tool from ${mcpName}`,
             inputSchema: tool.inputSchema,
             execute: async (args: any) => {
@@ -693,10 +717,7 @@ async function startServer(config: any) {
 
     // If we get an EADDRINUSE error, provide a helpful message
     if (error instanceof Error && error.message.includes("EADDRINUSE")) {
-      console.error(`Port ${port} is already in use. You may need to:
-      1. Stop other services using this port
-      2. Choose a different port
-      3. Wait a moment and try again`);
+      console.error(`Port ${port} is already in use`);
     }
   }
 }

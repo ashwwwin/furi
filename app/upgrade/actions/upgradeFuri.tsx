@@ -2,7 +2,7 @@ import { $ } from "bun";
 import { resolveFromBase } from "@/helpers/paths";
 
 const RemotePackageJSON = "https://api.github.com/repos/ashwwwin/furi/contents/package.json";
-const InstallScriptURL = "https://furikake.app/install";
+const InstallScriptURL = "https://furi.so/install";
 
 // Common result type pattern
 interface ActionResult {

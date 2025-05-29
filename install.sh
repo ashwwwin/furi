@@ -294,12 +294,12 @@ elif [ -f "/usr/local/bin/bun" ]; then
 elif [ -f "/opt/homebrew/bin/bun" ]; then
   BUN_CMD="/opt/homebrew/bin/bun"
 else
-  echo "Error: Bun runtime not found. Please reinstall with: curl -fsSL https://furikake.app/install | bash"
+  echo "Error: Bun runtime not found. Please reinstall with: curl -fsSL https://furi.so/install | bash"
   exit 1
 fi
 
 if [ ! -f "\$HOME/.furikake/index.ts" ]; then
-  echo "Error: Furikake installation is corrupted. Please reinstall with: curl -fsSL https://furikake.app/install | bash"
+  echo "Error: Furikake installation is corrupted. Please reinstall with: curl -fsSL https://furi.so/install | bash"
   exit 1
 fi
 
@@ -413,7 +413,7 @@ main() {
   clear
   echo -e "${CYAN}${BOLD}Furikake Installer${NC}"
   echo -e "${ITALIC}CLI & API for MCP management & execution${NC}"
-  echo -e "${DIM}https://furikake.app   $REPO_URL\n${NC}"
+  echo -e "${DIM}https://furi.so  $REPO_URL\n${NC}"
   
   current_step=0
   

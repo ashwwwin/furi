@@ -1,7 +1,7 @@
 {
   "name": "furikake-cli",
   "module": "index.ts",
-  "version": "0.1.07",
+  "version": "0.1.09",
   "type": "module",
   "private": true,
   "scripts": {

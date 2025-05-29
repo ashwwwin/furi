@@ -44,6 +44,10 @@ import {
   singleToolsResponse,
   toolsResponse,
   callResponse,
+  startAggregatorResponse,
+  stopAggregatorResponse,
+  restartAggregatorResponse,
+  statusAggregatorResponse,
 } from "@/http/server";
 import { envResponse } from "@/http/server/endpoints/[mcpName]/env";
 import { httpStatusResponse } from "@/http/server/endpoints/http/status";
@@ -327,7 +331,8 @@ metaCommand
   .description("Starts the MCP aggregation server")
   // .option("-t, --transport <transport>", "Transport type", "sse")
   .option("-p, --port <port>", "Port number")
-  .action((options) => {
+  .option("-j, --json", "JSON output")
+  .action(async (options) => {
     // const transport = options.transport || "sse";
     const transport = "sse";
     let port: number;
@@ -341,23 +346,35 @@ metaCommand
       port = getAggregatorPort();
     }
 
-    startMCPAggregatorServer(transport, port);
+    if (options.json) {
+      jsonifyResponse(() => startAggregatorResponse(transport, port));
+    } else {
+      startMCPAggregatorServer(transport, port);
+    }
   });
 
 metaCommand
   .command("stop")
   .description("Stops the Meta MCP Aggregator server")
   .option("-j, --json", "JSON output")
-  .action(async () => {
-    await stopMCPAggregatorServer();
+  .action(async (options) => {
+    if (options.json) {
+      jsonifyResponse(() => stopAggregatorResponse());
+    } else {
+      await stopMCPAggregatorServer();
+    }
   });
 
 metaCommand
   .command("restart")
   .description("Restarts the Meta MCP Aggregator server")
   .option("-j, --json", "JSON output")
-  .action(async () => {
-    await restartMCPAggregatorServer();
+  .action(async (options) => {
+    if (options.json) {
+      jsonifyResponse(() => restartAggregatorResponse());
+    } else {
+      await restartMCPAggregatorServer();
+    }
   });
 
 metaCommand
@@ -367,7 +384,11 @@ metaCommand
   .option("-j, --json", "JSON output")
   .action(async (options) => {
     const lines = parseInt(options.lines, 10);
-    await aggregatorStatus(lines);
+    if (options.json) {
+      jsonifyResponse(() => statusAggregatorResponse(lines));
+    } else {
+      await aggregatorStatus(lines);
+    }
   });
 
 program.addCommand(httpCommand);

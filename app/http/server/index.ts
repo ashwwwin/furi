@@ -10,6 +10,12 @@ import { callResponse } from "@/http/server/endpoints/[mcpName]/call";
 import { singleStatusResponse } from "@/http/server/endpoints/[mcpName]/status";
 import { singleToolsResponse } from "@/http/server/endpoints/[mcpName]/tools";
 import { toolsResponse } from "@/http/server/endpoints/tools";
+import {
+  startAggregatorResponse,
+  stopAggregatorResponse,
+  restartAggregatorResponse,
+  statusAggregatorResponse,
+} from "@/http/server/endpoints/aggregator";
 
 export {
   addResponse,
@@ -24,4 +30,8 @@ export {
   singleStatusResponse,
   singleToolsResponse,
   toolsResponse,
+  startAggregatorResponse,
+  stopAggregatorResponse,
+  restartAggregatorResponse,
+  statusAggregatorResponse,
 };
