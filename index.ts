@@ -88,7 +88,7 @@ program
   .option("-j, --json", "JSON output")
   .action((mcpName, options) => {
     if (options.json) {
-      jsonifyResponse(() => removeResponse(`/remove/${mcpName}`));
+      jsonifyResponse(() => removeResponse(`${mcpName}/remove`));
     } else {
       removePackage(mcpName);
     }

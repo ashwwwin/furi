@@ -21,7 +21,7 @@ Furikake is an easy to use, local CLI & API for MCP management and execution.
 To install Furikake, you can use the following command:
 
 ```bash
-curl -fsSL https://furikake.app/install | bash
+curl -fsSL https://furi.so/install | bash
 ```
 
 Verify the installation by running:
