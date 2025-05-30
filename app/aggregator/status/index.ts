@@ -171,7 +171,7 @@ export const getAggregatorServerStatus = async (lines: number = 15) => {
         ? formatUptime(Date.now() - processInfo.pm2_env.pm_uptime)
         : "N/A",
       transport: transportType,
-      port: transportType === "sse" ? port : "N/A",
+      port: transportType === "sse" ? port : "stdio (persistent)",
     };
 
     // Display the status
@@ -180,7 +180,7 @@ export const getAggregatorServerStatus = async (lines: number = 15) => {
     // Display additional transport info
     console.log(
       `\n\x1b[36mTransport:\x1b[0m ${transportType}${
-        transportType === "sse" ? ` (port: ${port})` : ""
+        transportType === "sse" ? ` (port: ${port})` : " (persistent connections)"
       }`
     );
 

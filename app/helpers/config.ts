@@ -88,3 +88,32 @@ export const saveAggregatorPort = (port: number): void => {
   config.aggregator.port = port;
   writeConfig(config);
 };
+
+/**
+ * Get the socketPath for an MCP from configuration
+ */
+export const getSocketPath = (mcpName: string): string | null => {
+  const config = readConfig();
+  
+  // Check if MCP exists in root level
+  if (config[mcpName]?.socketPath) {
+    return config[mcpName].socketPath;
+  }
+  
+  // Check for transport key (legacy)
+  if (config[mcpName]?.transport) {
+    return config[mcpName].transport;
+  }
+  
+  // Check if MCP exists in installed section
+  if (config.installed?.[mcpName]?.socketPath) {
+    return config.installed[mcpName].socketPath;
+  }
+  
+  // Check for transport key in installed section (legacy)
+  if (config.installed?.[mcpName]?.transport) {
+    return config.installed[mcpName].transport;
+  }
+  
+  return null;
+};

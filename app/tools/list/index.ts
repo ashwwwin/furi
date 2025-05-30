@@ -26,7 +26,7 @@ const renderTool = (tool: Tool, index: number) => {
         console.log(
           `               \x1b[2m➤\x1b[0m ${propName} ${required}\n                    \x1b[2m${
             prop.description || prop.type || ""
-          }\x1b[0m`
+          }\x1b[0m`,
         );
       });
     }
@@ -37,7 +37,7 @@ const renderTool = (tool: Tool, index: number) => {
 const displayMcpTools = (result: McpToolsResult, showMcpName: boolean) => {
   if (!result.success) {
     console.log(
-      `\n${result.mcpName}: ${result.error || "Failed to fetch tools"}`
+      `\n${result.mcpName}: ${result.error || "Failed to fetch tools"}`,
     );
     return;
   }
@@ -59,14 +59,14 @@ const displayMcpTools = (result: McpToolsResult, showMcpName: boolean) => {
   if (result.tools.length > 0 && result.tools[0]) {
     console.log("     Example usage:");
     console.log(
-      `          \x1b[32mfuri call ${result.mcpName} ${result.tools[0].name} '{"param1":"value1","param2":"value2"}'\x1b[0m`
+      `          \x1b[32mfuri call ${result.mcpName} ${result.tools[0].name} '{"param1":"value1","param2":"value2"}'\x1b[0m`,
     );
   }
 };
 
 export const listTools = async (mcpName: string) => {
   const spinner = createSpinner(
-    `Connecting to MCP ${mcpName === "all" ? "servers" : `server [${mcpName}]`}`
+    `Connecting to MCP ${mcpName === "all" ? "servers" : `server [${mcpName}]`}`,
   );
   spinner.start();
 
@@ -92,15 +92,17 @@ export const listTools = async (mcpName: string) => {
     }
 
     // Display all results
-    results.forEach((result) => {
+    for (let result of results) {
       displayMcpTools(result, mcpName === "all");
-    });
+    }
 
     // Show general note about parameters after listing all MCPs
     console.log(
-      "\n\x1b[2m     Note: Parameters must be a valid JSON string enclosed in single quotes\x1b[0m"
+      "\n\x1b[2m     Note: Parameters must be a valid JSON string enclosed in single quotes\x1b[0m",
     );
   } catch (error: any) {
     spinner.error(`Error: ${error.message || String(error)}`);
+  } finally {
+    process.exit();
   }
 };

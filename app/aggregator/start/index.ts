@@ -8,20 +8,12 @@ import {
 } from "@/aggregator/server/manager";
 
 export async function startMCPAggregatorServer(
-  transportType: "sse" | "stdio" = "stdio",
+  transportType: "sse" | "stdio" = "sse",
   port: number = 9338
 ) {
   const spinner = createSpinner("Starting MCP Aggregator server").start();
 
   try {
-    // Validate transport type
-    if (transportType !== "sse" && transportType !== "stdio") {
-      spinner.error({
-        text: `Invalid transport type '${transportType}'. Valid options are 'sse' or 'stdio'.`,
-      });
-      return;
-    }
-
     // Validate port number
     if (isNaN(port) || !Number.isInteger(port) || port < 1 || port > 65535) {
       spinner.error({
@@ -48,25 +40,23 @@ export async function startMCPAggregatorServer(
       });
     }
 
-    // Check if the port is already in use (only for SSE transport)
-    if (transportType === "sse") {
-      try {
-        const portInUse = await isPortFree(port);
-        if (!portInUse) {
-          spinner.error({
-            text: `Port ${port} is already in use. Please choose a different port.`,
-          });
-          return;
-        }
-      } catch (portCheckError) {
-        spinner.warn({
-          text: `Unable to check port availability: ${
-            portCheckError instanceof Error
-              ? portCheckError.message
-              : String(portCheckError)
-          }\n     Will attempt to start anyway.`,
+    // Check if the port is already in use
+    try {
+      const portInUse = await isPortFree(port);
+      if (!portInUse) {
+        spinner.error({
+          text: `Port ${port} is already in use. Please choose a different port.`,
         });
+        return;
       }
+    } catch (portCheckError) {
+      spinner.warn({
+        text: `Unable to check port availability: ${
+          portCheckError instanceof Error
+            ? portCheckError.message
+            : String(portCheckError)
+        }\n     Will attempt to start anyway.`,
+      });
     }
 
     // Set configuration
@@ -98,7 +88,7 @@ export async function startMCPAggregatorServer(
 
     spinner.success({ text: "MCP Aggregator server started" });
     console.log(
-      `     \x1b[2mAggregator running on http://127.0.0.1:${port}/sse`
+      `     \x1b[2mAggregator running on http://127.0.0.1:${port}/sse (persistent MCP connections)`
     );
   } catch (error: any) {
     spinner.error({

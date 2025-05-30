@@ -1,6 +1,5 @@
 import { FastMCP } from "fastmcp";
 import { z } from "zod";
-import { getPooledConnection } from "@/helpers/mcpConnectionManager";
 import { getTools } from "@/tools/list/actions/getTools";
 import { getProcStatus } from "@/mcp/status/actions/getProcStatus";
 import { disconnectFromPm2 } from "@/helpers/mcpConnectionManager";
@@ -8,6 +7,9 @@ import { disconnectFromPm2 } from "@/helpers/mcpConnectionManager";
 // Create a separate connection pool for the aggregator
 import { McpConnectionPool } from "@/helpers/mcpConnectionManager";
 const aggregatorPool = new McpConnectionPool("furi");
+
+// Helper to check if we're in stdio mode (should suppress logging)
+const isStdioMode = () => process.env.TRANSPORT_TYPE === "stdio";
 
 type ToolSchema = {
   properties: Record<string, any>;
@@ -46,7 +48,7 @@ function createToolName(mcpName: string, toolName: string): string {
   const halfSpace = Math.floor(availableSpace / 2);
   const result = `${mcpName.substring(0, halfSpace)}-${toolName.substring(
     0,
-    halfSpace
+    halfSpace,
   )}`;
   return result.replace("--", "-");
 }
@@ -65,7 +67,9 @@ async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
 
     if (!result.success || !Array.isArray(result.data)) {
       // Keep essential error logs
-      console.error("Failed to get MCPs list");
+      if (!isStdioMode()) {
+        console.error("Failed to get MCPs list");
+      }
       return [];
     }
 
@@ -101,29 +105,33 @@ async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
             inputSchema: tool.inputSchema,
             execute: async (args: any) => {
               try {
-                // Use the aggregator's pooled connection - it will handle reconnection if needed
-                const pooledConnection = await aggregatorPool.getConnection(
-                  mcpName
-                );
+                // Use the aggregator's pooled connection - maintains persistence across calls
+                const pooledConnection =
+                  await aggregatorPool.getConnection(mcpName);
                 if (!pooledConnection || !pooledConnection.client) {
                   throw new Error(`Failed to connect to MCP: ${mcpName}`);
                 }
 
+                // Execute tool with persistent connection - state is maintained
                 const result = await pooledConnection.client.callTool({
                   name: tool.name,
                   arguments: args,
                 });
+
+                // Connection remains active for subsequent calls
                 return result;
               } catch (error: any) {
                 // Keep error logs for troubleshooting tool execution issues
-                console.error(
-                  `Error calling ${tool.name} on ${mcpName}:`,
-                  error
-                );
+                if (!isStdioMode()) {
+                  console.error(
+                    `Error calling ${tool.name} on ${mcpName}:`,
+                    error,
+                  );
+                }
                 throw new Error(
                   `Failed to execute ${tool.name}: ${
                     error.message || "Unknown error"
-                  }`
+                  }`,
                 );
               }
             },
@@ -131,16 +139,20 @@ async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
         });
       } catch (error: any) {
         // Keep error logs but make them less verbose
-        console.error(
-          `Error with MCP ${mcpName}: ${error.message || String(error)}`
-        );
+        if (!isStdioMode()) {
+          console.error(
+            `Error with MCP ${mcpName}: ${error.message || String(error)}`,
+          );
+        }
       }
     }
 
     return mcpTools;
   } catch (error: any) {
     // Keep critical error logs
-    console.error("Error fetching MCPs:", error.message || String(error));
+    if (!isStdioMode()) {
+      console.error("Error fetching MCPs:", error.message || String(error));
+    }
     return [];
   }
 }
@@ -190,11 +202,15 @@ function initializeServer(serverInstance: FastMCP) {
 
   // Add event listeners
   serverInstance.on("connect", (event) => {
-    console.log("Client connected");
+    if (!isStdioMode()) {
+      console.log("Client connected");
+    }
   });
 
   serverInstance.on("disconnect", (event) => {
-    console.log("Client disconnected");
+    if (!isStdioMode()) {
+      console.log("Client disconnected");
+    }
   });
 
   return serverInstance;
@@ -236,14 +252,16 @@ function startToolsPolling(intervalMs = 10000) {
 
         if (hasChanges) {
           // Only log the change details when it happens for easier troubleshooting
-          console.log(
-            `MCP list changed: ${previousMcpList.length} → ${currentMcpList.length} MCPs`
-          );
+          if (!isStdioMode()) {
+            console.log(
+              `MCP list changed: ${previousMcpList.length} → ${currentMcpList.length} MCPs`,
+            );
+          }
 
           // Update the cached list
           previousMcpList = [...currentMcpList];
 
-          // Update tools
+          // Update tools while maintaining persistent connections
           await updateTools();
         }
       }
@@ -253,7 +271,11 @@ function startToolsPolling(intervalMs = 10000) {
     }
   }, intervalMs);
 
-  console.log(`Tool polling enabled (interval: ${intervalMs}ms)`);
+  if (!isStdioMode()) {
+    console.log(
+      `Tool polling enabled (interval: ${intervalMs}ms) - persistent connections maintained`,
+    );
+  }
 }
 
 // Update tools without recreating the server
@@ -362,9 +384,9 @@ async function updateTools() {
                           nestedObj[nestedKey] = z
                             .any()
                             .describe(
-                              (nestedProp as any).description || nestedKey
+                              (nestedProp as any).description || nestedKey,
                             );
-                        }
+                        },
                       );
                       zodType = z.object(nestedObj);
                     } else {
@@ -390,7 +412,7 @@ async function updateTools() {
                 }
 
                 schemaObj[key] = zodType;
-              }
+              },
             );
             parameters = z.object(schemaObj);
           } else {
@@ -429,7 +451,9 @@ async function updateTools() {
       // Try to stop the server silently
       try {
         server.stop();
-        console.log("Server stopped successfully");
+        if (!isStdioMode()) {
+          console.log("Server stopped successfully");
+        }
       } catch (error) {
         // Silently ignore stop errors
       }
@@ -447,36 +471,48 @@ async function updateTools() {
     // Restart with the same transport configuration if available, but silently
     try {
       if (transportConfig) {
-        console.log(`Restarting server with port ${port || "unknown"}`);
+        if (!isStdioMode()) {
+          console.log(`Restarting server with port ${port || "unknown"}`);
+        }
         server.start({
           ...transportConfig,
           ...({ silent: true } as any),
         });
-        console.log("Server restarted with updated tools");
+        if (!isStdioMode()) {
+          console.log("Server restarted with updated tools");
+        }
       } else if (originalTransport) {
         // Try to use the original transport configuration as a fallback
-        console.log(
-          `Restarting server with original transport (port: ${
-            port || "unknown"
-          })`
-        );
+        if (!isStdioMode()) {
+          console.log(
+            `Restarting server with original transport (port: ${
+              port || "unknown"
+            })`,
+          );
+        }
         server.start({
           ...originalTransport,
           ...({ silent: true } as any),
         });
-        console.log(
-          "Server restarted with updated tools using original transport"
-        );
+        if (!isStdioMode()) {
+          console.log(
+            "Server restarted with updated tools using original transport",
+          );
+        }
       }
     } catch (error) {
-      console.error("Error restarting server:", error);
+      if (!isStdioMode()) {
+        console.error("Error restarting server:", error);
+      }
     }
   } catch (error: any) {
-    console.error("Error updating tools:", error);
+    if (!isStdioMode()) {
+      console.error("Error updating tools:", error);
+    }
   }
 }
 
-// Add tools to server initially
+// Add tools to server initially with persistent connections
 async function addTools() {
   try {
     const mcpTools = await getToolsFromAllMcps();
@@ -485,7 +521,11 @@ async function addTools() {
     previousMcpList = mcpTools.map((group) => group.mcpName);
 
     // Concise log for initial setup
-    console.log(`Initializing with ${previousMcpList.length} MCPs`);
+    if (!isStdioMode()) {
+      console.log(
+        `Initializing with ${previousMcpList.length} MCPs (persistent connections)`,
+      );
+    }
 
     // Track total tool count
     let totalTools = 0;
@@ -577,9 +617,9 @@ async function addTools() {
                           nestedObj[nestedKey] = z
                             .any()
                             .describe(
-                              (nestedProp as any).description || nestedKey
+                              (nestedProp as any).description || nestedKey,
                             );
-                        }
+                        },
                       );
                       zodType = z.object(nestedObj);
                     } else {
@@ -605,7 +645,7 @@ async function addTools() {
                 }
 
                 schemaObj[key] = zodType;
-              }
+              },
             );
             parameters = z.object(schemaObj);
           } else {
@@ -627,9 +667,15 @@ async function addTools() {
     });
 
     // Single summary log instead of per-MCP logs
-    console.log(`Initialized ${totalTools} tools from ${mcpTools.length} MCPs`);
+    if (!isStdioMode()) {
+      console.log(
+        `Initialized ${totalTools} tools from ${mcpTools.length} MCPs with persistent connections`,
+      );
+    }
   } catch (error: any) {
-    console.error("Error adding remote tools:", error);
+    if (!isStdioMode()) {
+      console.error("Error adding remote tools:", error);
+    }
   }
 }
 
@@ -664,12 +710,16 @@ async function startServer(config: any) {
 
   // Start the server with the provided configuration and silent option
   try {
-    console.log(`Starting server with port ${port}...`);
+    if (!isStdioMode()) {
+      console.log(`Starting server with port ${port}...`);
+    }
 
     // If there's already a server running with this port, try to stop it first
     try {
       server.stop();
-      console.log(`Stopped previous server instance`);
+      if (!isStdioMode()) {
+        console.log(`Stopped previous server instance`);
+      }
 
       // Brief delay to allow port release
       await sleep(1000);
@@ -678,21 +728,27 @@ async function startServer(config: any) {
         ...config,
         ...({ silent: true } as any),
       });
-      console.log(`Server started successfully on port ${port}`);
+      if (!isStdioMode()) {
+        console.log(`Server started successfully on port ${port}`);
+      }
     } catch (stopError) {
       // If server wasn't running, just start it directly
       server.start({
         ...config,
         ...({ silent: true } as any),
       });
-      console.log(`Server started successfully on port ${port}`);
+      if (!isStdioMode()) {
+        console.log(`Server started successfully on port ${port}`);
+      }
     }
   } catch (error) {
-    console.error(`Error starting server on port ${port}:`, error);
+    if (!isStdioMode()) {
+      console.error(`Error starting server on port ${port}:`, error);
 
-    // If we get an EADDRINUSE error, provide a helpful message
-    if (error instanceof Error && error.message.includes("EADDRINUSE")) {
-      console.error(`Port ${port} is already in use`);
+      // If we get an EADDRINUSE error, provide a helpful message
+      if (error instanceof Error && error.message.includes("EADDRINUSE")) {
+        console.error(`Port ${port} is already in use`);
+      }
     }
   }
 }
@@ -702,7 +758,9 @@ function stopToolsPolling() {
   if (toolUpdateInterval) {
     clearInterval(toolUpdateInterval);
     toolUpdateInterval = null;
-    console.log("Tool polling stopped");
+    if (!isStdioMode()) {
+      console.log("Tool polling stopped");
+    }
   }
 }
 
@@ -710,9 +768,13 @@ function stopToolsPolling() {
 async function cleanupAggregatorConnections() {
   try {
     await aggregatorPool.closeAllConnections();
-    console.log("Aggregator connections cleaned up");
+    if (!isStdioMode()) {
+      console.log("Aggregator connections cleaned up");
+    }
   } catch (error) {
-    console.error("Error cleaning up aggregator connections:", error);
+    if (!isStdioMode()) {
+      console.error("Error cleaning up aggregator connections:", error);
+    }
   }
 }
 

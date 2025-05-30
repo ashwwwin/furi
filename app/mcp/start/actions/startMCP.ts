@@ -1,11 +1,9 @@
-import { createSpinner } from "nanospinner";
 import { readFileSync } from "fs";
-import { join } from "path";
 import pm2 from "pm2";
 import { resolveFromBase } from "@/helpers/paths";
 
 export const startMCPCore = async (
-  mcpName: string
+  mcpName: string,
 ): Promise<{ success: boolean; message: string }> => {
   try {
     const configPath = resolveFromBase("configuration.json");
@@ -26,6 +24,11 @@ export const startMCPCore = async (
     const [cmd, ...args] = runCommand.split(" ");
 
     const cwd = mcpConfig.source || `installed/${mcpName}`;
+
+    // Debug logging
+    // console.log(`[${mcpName}] DEBUG: Using run command: ${runCommand}`);
+    // console.log(`[${mcpName}] DEBUG: Working directory: ${cwd}`);
+    // console.log(`[${mcpName}] DEBUG: Transport wrapper enabled: ${mcpConfig.transportWrapper}`);
 
     // Initialize environment variables with a clean slate
     const env: Record<string, string> = {};
@@ -106,7 +109,7 @@ export const startMCPCore = async (
             return;
           }
           resolve();
-        }
+        },
       );
     });
 

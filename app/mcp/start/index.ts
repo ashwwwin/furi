@@ -3,14 +3,13 @@ import { startMCPCore } from "./actions/startMCP";
 import { scanEnvVars } from "../env/actions/scanEnvVars";
 import readline from "readline";
 import { readFileSync, writeFileSync } from "fs";
-import { join } from "path";
 import chalk from "chalk";
 import { resolveFromBase } from "@/helpers/paths";
 
 export const startMCP = async (
   mcpName: string,
   envJson?: string,
-  skipCheck?: boolean
+  skipCheck?: boolean,
 ) => {
   let config: any;
   let initialEnv: Record<string, string> = {};
@@ -51,8 +50,8 @@ export const startMCP = async (
           chalk.red(
             `[${mcpName}] Error parsing environment variables: ${
               error instanceof Error ? error.message : String(error)
-            }`
-          )
+            }`,
+          ),
         );
         return;
       }
@@ -78,7 +77,7 @@ export const startMCP = async (
 
     if (missingEnvVars.length > 0) {
       console.warn(
-        chalk.yellow(`\n[${mcpName}] Missing environment variable(s)`)
+        chalk.yellow(`\n[${mcpName}] Missing environment variable(s)`),
       );
       for (const variable of missingEnvVars) {
         console.warn(chalk.yellow(`     ${chalk.dim(`${variable}=`)}`));
@@ -102,27 +101,27 @@ export const startMCP = async (
      ${chalk.cyan("[1]")} Run anyway (not recommended)
      ${chalk.cyan("[2]")} Input missing values now
      ${chalk.cyan("[3]")} Exit
-\nEnter choice: `)
+\nEnter choice: `),
         );
 
         switch (choice.trim()) {
           case "1":
             console.log(
               chalk.dim(
-                `\n[${mcpName}] Proceeding without setting missing variables\n`
-              )
+                `\n[${mcpName}] Proceeding without setting missing variables\n`,
+              ),
             );
             proceed = true;
             break;
           case "2":
             console.log(
               chalk.white(
-                `[${mcpName}] Please provide values for the missing variables:`
-              )
+                `[${mcpName}] Please provide values for the missing variables:`,
+              ),
             );
             for (const varName of missingEnvVars) {
               const value = await askQuestion(
-                chalk.dim(`  Enter value for ${chalk.bold(varName)}: `)
+                chalk.dim(`  Enter value for ${chalk.bold(varName)}: `),
               );
               initialEnv[varName] = value;
               // Ensure env exists before assigning
@@ -133,8 +132,8 @@ export const startMCP = async (
             }
             console.log(
               chalk.green(
-                `[${mcpName}] All missing variables provided for this session.`
-              )
+                `[${mcpName}] All missing variables provided for this session.`,
+              ),
             );
 
             // Save the updated configuration to the configuration.json file
@@ -142,7 +141,7 @@ export const startMCP = async (
               writeFileSync(
                 configPath,
                 JSON.stringify(config, null, 2),
-                "utf-8"
+                "utf-8",
               );
             } catch (writeError) {
               console.error(
@@ -151,8 +150,8 @@ export const startMCP = async (
                     writeError instanceof Error
                       ? writeError.message
                       : String(writeError)
-                  }`
-                )
+                  }`,
+                ),
               );
             }
 
@@ -172,8 +171,8 @@ export const startMCP = async (
       if (exit) {
         console.log(
           chalk.yellow(
-            `\n[${mcpName}] Aborted by user due to missing environment variables.`
-          )
+            `\n[${mcpName}] Aborted by user due to missing environment variables.`,
+          ),
         );
         return;
       }
@@ -183,8 +182,8 @@ export const startMCP = async (
       chalk.red(
         `[${mcpName}] Error during pre-start check: ${
           error instanceof Error ? error.message : String(error)
-        }`
-      )
+        }`,
+      ),
     );
     return;
   }

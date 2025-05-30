@@ -152,6 +152,8 @@ You can use Furikake with any MCP client such as Cursor via the MCP Aggregator.
 
 Furi collects tools from all running MCPs and exposes them through an SSE endpoint that your app or mcp client can subscribe to. The aggregator automatically builds the list of tools from all running MCPs and listens for new tools as MCPs are started and stopped.
 
+### For MCP Clients that support SSE
+
 To start the aggregator server:
 
 ```bash
@@ -159,6 +161,20 @@ furi meta start
 ```
 
 _This will also show you the endpoint your MCP client needs to subscribe to_
+
+### For MCP Clients that only support stdio
+
+Some MCP clients don't support SSE transport and require stdio connections. For these clients, use:
+
+```bash
+furi connect
+```
+
+This starts the aggregator server directly in stdio mode, allowing MCP clients to connect via stdin/stdout. The server will aggregate all tools from your running MCPs and make them available through the stdio transport.
+
+**Important**: This command provides JSON-only output to comply with MCP protocol requirements. All logging is suppressed to ensure clean communication with MCP clients.
+
+_Note: Unlike `furi meta start`, this command runs in the foreground and maintains the connection directly._
 
 You can specify a custom port:
 

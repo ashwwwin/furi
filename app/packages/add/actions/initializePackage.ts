@@ -16,10 +16,250 @@ type SmitheryConfig = {
   };
 };
 
+// Create a transport wrapper that enables multiple connection methods
+async function createTransportWrapper(
+  packagePath: string,
+  mcpName: string,
+  originalRunCommand: string,
+): Promise<{ success: boolean; runCommand?: string }> {
+  try {
+    // Check if the package uses ESM
+    const packageJsonPath = join(packagePath, "package.json");
+    let isESM = false;
+
+    if (existsSync(packageJsonPath)) {
+      try {
+        const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+        isESM = packageJson.type === "module";
+      } catch (e) {
+        // Default to CommonJS if we can't read package.json
+      }
+    }
+
+    // Create a wrapper script that:
+    // 1. Starts the original MCP server with stdio
+    // 2. Creates a Unix socket for additional connections
+    // 3. Optionally starts an HTTP server for network connections
+
+    const wrapperPath = join(
+      packagePath,
+      isESM ? "furi-transport-wrapper.mjs" : "furi-transport-wrapper.cjs",
+    );
+    const socketPath = resolveFromBase(
+      `/transport/furi_${mcpName.replace("/", "-")}.sock`,
+    );
+
+    // Ensure the transport directory exists
+    const transportDir = dirname(socketPath);
+    if (!existsSync(transportDir)) {
+      mkdirSync(transportDir, { recursive: true });
+    }
+
+    // Generate appropriate wrapper based on module type
+    const wrapperContent = isESM
+      ? // ESM wrapper
+        `#!/usr/bin/env node
+/**
+ * Furikake Transport Wrapper (ESM)
+ * This wrapper enables multiple connection methods to the MCP server
+ */
+
+import { spawn } from 'child_process';
+import net from 'net';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const mcpName = '${mcpName}';
+const socketPath = '${socketPath}';
+const originalCommand = ${JSON.stringify(originalRunCommand)};
+
+// Ensure the transport directory exists
+const transportDir = path.dirname(socketPath);
+if (!fs.existsSync(transportDir)) {
+  fs.mkdirSync(transportDir, { recursive: true });
+}
+
+// Clean up any existing socket
+if (fs.existsSync(socketPath)) {
+  fs.unlinkSync(socketPath);
+}
+
+// Parse the original command
+const parts = originalCommand.split(' ');
+const cmd = parts[0];
+const args = parts.slice(1);
+
+// Start the original MCP server in the correct directory
+// console.log('[Furikake] DEBUG: Wrapper script starting...');
+// console.log('[Furikake] Starting MCP server:', originalCommand);
+// console.log('[Furikake] DEBUG: Working directory:', __dirname);
+// console.log('[Furikake] DEBUG: Socket path:', socketPath);
+const mcpProcess = spawn(cmd, args, {
+  cwd: __dirname, // Ensure we're in the package directory
+  env: process.env,
+  stdio: 'pipe'
+});
+
+// Forward stdio for PM2 compatibility
+mcpProcess.stdout.on('data', (data) => process.stdout.write(data));
+mcpProcess.stderr.on('data', (data) => process.stderr.write(data));
+process.stdin.pipe(mcpProcess.stdin);
+
+// Create Unix socket server for additional connections
+const server = net.createServer((socket) => {
+  console.log('[Furikake] Client connected via Unix socket');
+
+  // Create bidirectional pipe between socket and MCP process
+  socket.pipe(mcpProcess.stdin);
+  mcpProcess.stdout.pipe(socket);
+
+  socket.on('end', () => {
+    console.log('[Furikake] Client disconnected from Unix socket');
+  });
+});
+
+server.listen(socketPath, () => {
+  // console.log('[Furikake] Unix socket listening at:', socketPath);
+  // console.log('[Furikake] DEBUG: Socket file created successfully');
+  // Set permissions so other processes can connect
+  fs.chmodSync(socketPath, '666');
+  // console.log('[Furikake] DEBUG: Socket permissions set to 666');
+});
+
+// Handle process termination
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);
+mcpProcess.on('exit', (code) => {
+  console.log('[Furikake] MCP process exited with code:', code);
+  cleanup();
+  process.exit(code || 0);
+});
+
+function cleanup() {
+  console.log('[Furikake] Cleaning up...');
+  if (fs.existsSync(socketPath)) {
+    fs.unlinkSync(socketPath);
+  }
+  if (mcpProcess && !mcpProcess.killed) {
+    mcpProcess.kill();
+  }
+}
+`
+      : // CommonJS wrapper
+        `#!/usr/bin/env node
+/**
+ * Furikake Transport Wrapper (CommonJS)
+ * This wrapper enables multiple connection methods to the MCP server
+ */
+
+const { spawn } = require('child_process');
+const net = require('net');
+const fs = require('fs');
+const path = require('path');
+
+const mcpName = '${mcpName}';
+const socketPath = '${socketPath}';
+const originalCommand = ${JSON.stringify(originalRunCommand)};
+
+// Ensure the transport directory exists
+const transportDir = path.dirname(socketPath);
+if (!fs.existsSync(transportDir)) {
+  fs.mkdirSync(transportDir, { recursive: true });
+}
+
+// Clean up any existing socket
+if (fs.existsSync(socketPath)) {
+  fs.unlinkSync(socketPath);
+}
+
+// Parse the original command
+const parts = originalCommand.split(' ');
+const cmd = parts[0];
+const args = parts.slice(1);
+
+// Start the original MCP server in the correct directory
+// console.log('[Furikake] DEBUG: Wrapper script starting...');
+// console.log('[Furikake] Starting MCP server:', originalCommand);
+// console.log('[Furikake] DEBUG: Working directory:', __dirname);
+// console.log('[Furikake] DEBUG: Socket path:', socketPath);
+const mcpProcess = spawn(cmd, args, {
+  cwd: __dirname, // Ensure we're in the package directory
+  env: process.env,
+  stdio: 'pipe'
+});
+
+// Forward stdio for PM2 compatibility
+mcpProcess.stdout.on('data', (data) => process.stdout.write(data));
+mcpProcess.stderr.on('data', (data) => process.stderr.write(data));
+process.stdin.pipe(mcpProcess.stdin);
+
+// Create Unix socket server for additional connections
+const server = net.createServer((socket) => {
+  console.log('[Furikake] Client connected via Unix socket');
+
+  // Create bidirectional pipe between socket and MCP process
+  socket.pipe(mcpProcess.stdin);
+  mcpProcess.stdout.pipe(socket);
+
+  socket.on('end', () => {
+    console.log('[Furikake] Client disconnected from Unix socket');
+  });
+});
+
+server.listen(socketPath, () => {
+  // console.log('[Furikake] Unix socket listening at:', socketPath);
+  // console.log('[Furikake] DEBUG: Socket file created successfully');
+  // Set permissions so other processes can connect
+  fs.chmodSync(socketPath, '666');
+  // console.log('[Furikake] DEBUG: Socket permissions set to 666');
+});
+
+// Handle process termination
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);
+mcpProcess.on('exit', (code) => {
+  console.log('[Furikake] MCP process exited with code:', code);
+  cleanup();
+  process.exit(code || 0);
+});
+
+function cleanup() {
+  console.log('[Furikake] Cleaning up...');
+  if (fs.existsSync(socketPath)) {
+    fs.unlinkSync(socketPath);
+  }
+  if (mcpProcess && !mcpProcess.killed) {
+    mcpProcess.kill();
+  }
+}
+`;
+
+    // Write the wrapper file
+    writeFileSync(wrapperPath, wrapperContent, { mode: 0o755 });
+
+    // Return the new run command
+    return {
+      success: true,
+      runCommand: `node ${relative(packagePath, wrapperPath)}`,
+    };
+  } catch (error) {
+    console.warn(
+      `Failed to create transport wrapper: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    );
+    return { success: false };
+  }
+}
+
 // The goal of this function is to initialize the package
 // Get it to the point where it can be used by the user
 export const initializePackage = async (
-  mcpName: string
+  mcpName: string,
 ): Promise<PackageOutput> => {
   try {
     // Get the package path
@@ -56,7 +296,7 @@ export const initializePackage = async (
         console.warn(
           `Failed to parse smithery.yaml at ${smitheryPath}: ${
             yamlError instanceof Error ? yamlError.message : String(yamlError)
-          }`
+          }`,
         );
       }
     }
@@ -202,7 +442,6 @@ export const initializePackage = async (
               if (isEsm) {
                 // ESM wrapper
                 const esmWrapper = `
-// This is an automatically generated ESM wrapper for TypeScript files
 import { register } from 'ts-node';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -242,7 +481,7 @@ init().catch(err => {
                 writeFileSync(
                   join(distDir, "package.json"),
                   JSON.stringify(distPackageJson, null, 2),
-                  "utf-8"
+                  "utf-8",
                 );
               } else {
                 // CommonJS wrapper
@@ -265,7 +504,7 @@ try {
                 buildSuccessful = true;
               } catch (installError) {
                 console.warn(
-                  `Failed to install ts-node: ${String(installError)}`
+                  `Failed to install ts-node: ${String(installError)}`,
                 );
               }
             } else {
@@ -313,7 +552,7 @@ try {
       // Try to infer the entry point from the *script content*
       const scriptArgs = runScriptContent.split(" ");
       let sourceEntryPoint = scriptArgs.find(
-        (arg) => arg.endsWith(".ts") || arg.endsWith(".tsx")
+        (arg) => arg.endsWith(".ts") || arg.endsWith(".tsx"),
       );
 
       if (sourceEntryPoint) {
@@ -327,7 +566,7 @@ try {
             .replace(/\.(ts|tsx)$/, ".js");
           const jsIndexEntryPoint = join(
             dirname(sourceEntryPoint.replace(/^src\//, "")),
-            "index.js"
+            "index.js",
           );
 
           const potentialBuiltPath = join(packagePath, dir, jsEntryPoint);
@@ -339,7 +578,7 @@ try {
           const potentialBuiltPathNoSrc = join(
             packagePath,
             dir,
-            jsEntryPointNoSrc
+            jsEntryPointNoSrc,
           );
           if (existsSync(potentialBuiltPathNoSrc)) {
             foundBuiltEntry = potentialBuiltPathNoSrc;
@@ -349,7 +588,7 @@ try {
           const potentialBuiltPathIndex = join(
             packagePath,
             dir,
-            jsIndexEntryPoint
+            jsIndexEntryPoint,
           );
           if (existsSync(potentialBuiltPathIndex)) {
             foundBuiltEntry = potentialBuiltPathIndex;
@@ -358,7 +597,7 @@ try {
         }
       } else {
         console.warn(
-          `Could not infer source entry point from script: ${runScriptContent}`
+          `Could not infer source entry point from script: ${runScriptContent}`,
         );
       }
 
@@ -369,7 +608,7 @@ try {
         finalRunCommand = `node ${relativeBuiltPath}`;
       } else {
         console.warn(
-          `Build successful, but couldn't find corresponding built file for source entry point: ${sourceEntryPoint}. Using original run command: ${runCommand}`
+          `Build successful, but couldn't find corresponding built file for source entry point: ${sourceEntryPoint}. Using original run command: ${runCommand}`,
         );
       }
     }
@@ -379,6 +618,7 @@ try {
     const configExists = existsSync(configPath);
     let config: Record<string, any> = {};
     let configReadError = false;
+    let actualRunCommand = finalRunCommand; // Declare here with default value
 
     try {
       if (configExists) {
@@ -389,13 +629,6 @@ try {
           }
         } catch (parseError) {
           configReadError = true;
-          // console.warn(
-          //   `[${mcpName}] initializePackage: Invalid configuration file at ${configPath}, will attempt to overwrite. Error: ${
-          //     parseError instanceof Error
-          //       ? parseError.message
-          //       : String(parseError)
-          //   }`
-          // );
           // config remains {}
         }
       }
@@ -404,9 +637,28 @@ try {
         config.installed = {};
       }
 
+      // Create transport wrapper for the MCP server
+      const wrapperCreated = await createTransportWrapper(
+        packagePath,
+        mcpName,
+        finalRunCommand,
+      );
+
+      // Use wrapper command if successfully created
+      actualRunCommand = wrapperCreated.success
+        ? wrapperCreated.runCommand!
+        : finalRunCommand;
+
+      const socketPath = resolveFromBase(
+        `/transport/furi_${mcpName.replace("/", "-")}.sock`,
+      );
+
       config.installed[mcpName] = {
-        run: finalRunCommand,
+        run: actualRunCommand,
         source: packagePath,
+        socketPath: socketPath,
+        originalRun: finalRunCommand,
+        transportWrapper: wrapperCreated.success ? true : false,
       };
 
       try {
@@ -457,7 +709,7 @@ try {
     return {
       success: true,
       message: `${mcpName} initialized`,
-      runCommand: finalRunCommand,
+      runCommand: actualRunCommand,
     };
   } catch (error) {
     return {

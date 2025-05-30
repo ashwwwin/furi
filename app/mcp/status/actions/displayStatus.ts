@@ -1,5 +1,7 @@
 import chalk from "chalk";
 import type { MCPStatus } from "./getProcStatus";
+import { isUnixSocketAvailable } from "@/helpers/mcpConnectionManager";
+import { getSocketPath } from "@/helpers/config";
 
 /**
  * Status color mapping
@@ -18,7 +20,7 @@ const statusColors: Record<string, (text: string) => string> = {
  */
 export function displayStatus(
   statuses: MCPStatus[] | MCPStatus,
-  options?: { showDetails?: boolean }
+  options?: { showDetails?: boolean },
 ): void {
   if (!statuses) {
     console.log(chalk.yellow("No MCP servers are installed"));
@@ -34,18 +36,33 @@ export function displayStatus(
       statuses.status === "online"
         ? chalk.green
         : statuses.status === "offline" || statuses.status === "errored"
-        ? chalk.red
-        : statuses.status === "stopping" || statuses.status === "launching"
-        ? chalk.yellow
-        : chalk.gray;
+          ? chalk.red
+          : statuses.status === "stopping" || statuses.status === "launching"
+            ? chalk.yellow
+            : chalk.gray;
+
+    // Check Unix socket status for single MCP display
+    const hasUnixSocket = isUnixSocketAvailable(statuses.name);
+    const socketStatus = hasUnixSocket
+      ? chalk.green("✓ Unix socket")
+      : chalk.gray("○ stdio");
 
     console.log(
       `${chalk.bold(
-        `${chalk.white(statuses.name)}`
+        `${chalk.white(statuses.name)}`,
       )}                   (${statusColor(statuses.status)} / ${
         statuses.memory
-      } / ${statuses.cpu} / ${statuses.uptime} / ${statuses.pid})`
+      } / ${statuses.cpu} / ${statuses.uptime} / ${statuses.pid})`,
     );
+
+    // Display connection type
+    console.log(`\n\x1b[36mConnection:\x1b[0m ${socketStatus}`);
+    if (hasUnixSocket) {
+      const unixSocketPath = getSocketPath(statuses.name);
+      if (unixSocketPath) {
+        console.log(`\x1b[2mSocket: ${unixSocketPath}\x1b[0m`);
+      }
+    }
 
     return;
   }
@@ -58,7 +75,7 @@ export function displayStatus(
         chalk.dim("Memory".padEnd(10)) +
         chalk.dim("CPU".padEnd(10)) +
         chalk.dim("Uptime".padEnd(12.5)) +
-        chalk.dim("PID")
+        chalk.dim("PID"),
     );
   } else {
     console.log(chalk.dim("MCP name".padEnd(38)));
@@ -74,7 +91,7 @@ export function displayStatus(
           chalk.white(status.memory.padEnd(10)) +
           chalk.white(status.cpu.padEnd(10)) +
           chalk.white(status.uptime.padEnd(12.5)) +
-          chalk.white(status.pid)
+          chalk.white(status.pid),
       );
     } else {
       console.log(chalk.white(status.name.padEnd(38)));
