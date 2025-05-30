@@ -1,9 +1,13 @@
 import { FastMCP } from "fastmcp";
 import { z } from "zod";
-import { setupMcpConnection } from "@/helpers/mcpConnectionManager";
+import { getPooledConnection } from "@/helpers/mcpConnectionManager";
 import { getTools } from "@/tools/list/actions/getTools";
 import { getProcStatus } from "@/mcp/status/actions/getProcStatus";
 import { disconnectFromPm2 } from "@/helpers/mcpConnectionManager";
+
+// Create a separate connection pool for the aggregator
+import { McpConnectionPool } from "@/helpers/mcpConnectionManager";
+const aggregatorPool = new McpConnectionPool("furi");
 
 type ToolSchema = {
   properties: Record<string, any>;
@@ -70,15 +74,13 @@ async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
       .filter((mcp) => mcp.status === "online" && mcp.pid !== "N/A")
       .map((mcp) => mcp.name);
 
-    // Clean up previous connections
-    await cleanupConnections();
-
     const mcpTools: McpToolGroup[] = [];
     for (const mcpName of onlineMcps) {
       try {
-        const resources = await setupMcpConnection(mcpName);
+        // Use the aggregator's own connection pool
+        const connection = await aggregatorPool.getConnection(mcpName);
 
-        if (!resources || !resources.client) {
+        if (!connection || !connection.client) {
           // Reduce this to a debug-level message
           if (process.env.DEBUG) {
             console.warn(`Could not connect to MCP: ${mcpName}`);
@@ -86,10 +88,7 @@ async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
           continue;
         }
 
-        // Store the connection for later cleanup
-        connections[mcpName] = resources;
-
-        const { client } = resources;
+        const { client } = connection;
 
         // Fetch tools using the action
         const toolsResult = await getTools(client);
@@ -102,17 +101,15 @@ async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
             inputSchema: tool.inputSchema,
             execute: async (args: any) => {
               try {
-                // Make sure we have a valid connection
-                if (!connections[mcpName] || !connections[mcpName].client) {
-                  // Try to reconnect if connection is lost
-                  const newResources = await setupMcpConnection(mcpName);
-                  if (!newResources || !newResources.client) {
-                    throw new Error(`Failed to connect to MCP: ${mcpName}`);
-                  }
-                  connections[mcpName] = newResources;
+                // Use the aggregator's pooled connection - it will handle reconnection if needed
+                const pooledConnection = await aggregatorPool.getConnection(
+                  mcpName
+                );
+                if (!pooledConnection || !pooledConnection.client) {
+                  throw new Error(`Failed to connect to MCP: ${mcpName}`);
                 }
 
-                const result = await connections[mcpName].client.callTool({
+                const result = await pooledConnection.client.callTool({
                   name: tool.name,
                   arguments: args,
                 });
@@ -210,7 +207,6 @@ initializeServer(server);
 let toolUpdateInterval: NodeJS.Timeout | null = null;
 let transportConfig: any = null;
 let previousMcpList: string[] = [];
-let connections: { [key: string]: any } = {};
 
 // Start polling for tool updates
 function startToolsPolling(intervalMs = 10000) {
@@ -260,31 +256,10 @@ function startToolsPolling(intervalMs = 10000) {
   console.log(`Tool polling enabled (interval: ${intervalMs}ms)`);
 }
 
-// Clean up all active connections
-async function cleanupConnections() {
-  for (const key in connections) {
-    try {
-      if (
-        connections[key] &&
-        typeof connections[key].disconnect === "function"
-      ) {
-        await connections[key].disconnect();
-      }
-    } catch (error) {
-      console.error(`Error disconnecting from ${key}:`, error);
-    }
-  }
-  // Reset connections object
-  connections = {};
-}
-
 // Update tools without recreating the server
 async function updateTools() {
   try {
-    // First, clean up old connections
-    await cleanupConnections();
-
-    // Get fresh tools from all MCPs
+    // Get fresh tools from all MCPs (no need to cleanup connections since we use the shared pool)
     const mcpTools = await getToolsFromAllMcps();
 
     // Since FastMCP doesn't expose a way to remove tools or list existing tools,
@@ -731,6 +706,16 @@ function stopToolsPolling() {
   }
 }
 
+// Cleanup aggregator connections
+async function cleanupAggregatorConnections() {
+  try {
+    await aggregatorPool.closeAllConnections();
+    console.log("Aggregator connections cleaned up");
+  } catch (error) {
+    console.error("Error cleaning up aggregator connections:", error);
+  }
+}
+
 export {
   server,
   addTools,
@@ -738,4 +723,5 @@ export {
   stopToolsPolling,
   startServer,
   updateTools,
+  cleanupAggregatorConnections,
 };

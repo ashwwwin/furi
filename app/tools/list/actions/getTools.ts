@@ -1,6 +1,6 @@
 import type { McpClient } from "@/helpers/mcpConnectionManager";
 import {
-  setupMcpConnection,
+  getPooledConnection,
   disconnectFromPm2,
 } from "@/helpers/mcpConnectionManager";
 import { getProcStatus } from "@/mcp/status/actions/getProcStatus";
@@ -36,9 +36,9 @@ export const getToolsFromMcp = async (
   spinner?: any
 ): Promise<McpToolsResult> => {
   try {
-    // Setup MCP connection
-    const resources = await setupMcpConnection(mcpName, spinner);
-    if (!resources || !resources.client) {
+    // Get pooled connection (don't disconnect after use!)
+    const connection = await getPooledConnection(mcpName);
+    if (!connection || !connection.client) {
       return {
         mcpName,
         tools: [],
@@ -47,25 +47,17 @@ export const getToolsFromMcp = async (
       };
     }
 
-    const { client, disconnect } = resources;
+    const { client } = connection;
 
-    try {
-      // Fetch tools
-      const toolsResult = await getTools(client);
+    // Fetch tools using the pooled connection
+    const toolsResult = await getTools(client);
 
-      // Cleanup resources
-      await disconnect();
-
-      return {
-        mcpName,
-        tools: toolsResult.tools || [],
-        success: true,
-      };
-    } catch (error: any) {
-      // Ensure cleanup on error
-      await disconnect();
-      throw error;
-    }
+    // DO NOT disconnect - let the pool manage the connection lifecycle
+    return {
+      mcpName,
+      tools: toolsResult.tools || [],
+      success: true,
+    };
   } catch (error: any) {
     return {
       mcpName,

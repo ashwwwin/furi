@@ -12,14 +12,226 @@ export interface McpClient {
 }
 
 export interface McpTransport {
-  close: () => Promise<void>;
+  close?: () => Promise<void>;
 }
 
 export interface ConnectionResources {
-  client: McpClient | null;
-  transport: McpTransport | null;
+  client: McpClient;
+  transport: McpTransport;
   disconnect: () => Promise<void>;
 }
+
+// Connection pool to maintain persistent connections
+export class McpConnectionPool {
+  private connections: Map<string, ConnectionResources> = new Map();
+  private connectionPromises: Map<string, Promise<ConnectionResources | null>> =
+    new Map();
+  private readonly poolName: string;
+
+  constructor(poolName: string = "default") {
+    this.poolName = poolName;
+  }
+
+  async getConnection(mcpName: string): Promise<ConnectionResources | null> {
+    // Use namespaced key to avoid conflicts with other pools
+    const connectionKey = `${this.poolName}:${mcpName}`;
+
+    // Check if we already have a connection
+    const existing = this.connections.get(connectionKey);
+    if (existing) {
+      try {
+        // Test if connection is still alive by making a simple call
+        await existing.client.listTools();
+        return existing;
+      } catch (error) {
+        // Connection is dead, remove it and create a new one
+        console.warn(`[${mcpName}] Connection is dead, recreating...`);
+        this.connections.delete(connectionKey);
+        try {
+          await existing.disconnect();
+        } catch (disconnectError) {
+          // Ignore disconnect errors for dead connections
+        }
+      }
+    }
+
+    // Check if we're already creating a connection
+    const existingPromise = this.connectionPromises.get(connectionKey);
+    if (existingPromise) {
+      return existingPromise;
+    }
+
+    // Create new connection
+    const connectionPromise = this.createConnection(mcpName, connectionKey);
+    this.connectionPromises.set(connectionKey, connectionPromise);
+
+    try {
+      const connection = await connectionPromise;
+      if (connection) {
+        this.connections.set(connectionKey, connection);
+      }
+      return connection;
+    } finally {
+      this.connectionPromises.delete(connectionKey);
+    }
+  }
+
+  private async createConnection(
+    mcpName: string,
+    connectionKey: string
+  ): Promise<ConnectionResources | null> {
+    try {
+      // Dynamically import the MCP SDK
+      const ClientModule = await import(
+        "@modelcontextprotocol/sdk/client/index.js"
+      );
+      const StdioModule = await import(
+        "@modelcontextprotocol/sdk/client/stdio.js"
+      );
+
+      const Client = ClientModule.Client;
+      const StdioClientTransport = StdioModule.StdioClientTransport;
+
+      // Connect to PM2
+      await connectToPm2();
+
+      // Check if the process is running
+      const isRunning = await checkProcessStatus(mcpName);
+      if (!isRunning) {
+        await disconnectFromPm2();
+        return null;
+      }
+
+      // Get package configuration
+      const { cwdAbsolute, env, cmd, cmdArgs } = getPackageConfig(mcpName);
+
+      // Create an MCP client with pool-specific name
+      const client = new Client({
+        name: `furikake-cli-${this.poolName}`,
+        version: "0.0.1",
+      });
+
+      // Create stdio transport
+      const transport = new StdioClientTransport({
+        command: cmd,
+        args: cmdArgs,
+        cwd: cwdAbsolute,
+        env: env,
+        stderr: "ignore",
+      });
+
+      await client.connect(transport);
+
+      const disconnect = async () => {
+        try {
+          // Remove from pool
+          this.connections.delete(connectionKey);
+
+          // Close transport if it exists
+          if (transport && typeof transport.close === "function") {
+            await transport.close();
+          }
+
+          // Close client if it exists
+          if (client && typeof client.close === "function") {
+            await client.close();
+          }
+
+          // Disconnect from PM2
+          await disconnectFromPm2();
+        } catch (cleanupError) {
+          console.error("Error during cleanup:", cleanupError);
+        }
+      };
+
+      return {
+        client,
+        transport,
+        disconnect,
+      };
+    } catch (error: any) {
+      console.error(
+        `[${mcpName}] Error creating connection: ${
+          error.message || String(error)
+        }`
+      );
+
+      // Cleanup on error
+      try {
+        await disconnectFromPm2();
+      } catch (cleanupError) {
+        console.error("Error during cleanup:", cleanupError);
+      }
+
+      return null;
+    }
+  }
+
+  async closeConnection(mcpName: string): Promise<void> {
+    const connectionKey = `${this.poolName}:${mcpName}`;
+    const connection = this.connections.get(connectionKey);
+    if (connection) {
+      this.connections.delete(connectionKey);
+      try {
+        await connection.disconnect();
+      } catch (error) {
+        console.error(`[${mcpName}] Error closing connection:`, error);
+      }
+    }
+  }
+
+  async closeAllConnections(): Promise<void> {
+    const connections = Array.from(this.connections.entries());
+    this.connections.clear();
+
+    await Promise.all(
+      connections.map(async ([connectionKey, connection]) => {
+        try {
+          await connection.disconnect();
+        } catch (error) {
+          console.error(`[${connectionKey}] Error closing connection:`, error);
+        }
+      })
+    );
+  }
+
+  getPoolStats(): {
+    poolName: string;
+    activeConnections: number;
+    pendingConnections: number;
+  } {
+    return {
+      poolName: this.poolName,
+      activeConnections: this.connections.size,
+      pendingConnections: this.connectionPromises.size,
+    };
+  }
+}
+
+// Global connection pool instance for CLI/API calls (separate from aggregator)
+const connectionPool = new McpConnectionPool("furi");
+
+// Export function to get pooled connection
+export const getPooledConnection = (
+  mcpName: string
+): Promise<ConnectionResources | null> => {
+  return connectionPool.getConnection(mcpName);
+};
+
+// Export function to close specific connection
+export const closePooledConnection = (mcpName: string): Promise<void> => {
+  return connectionPool.closeConnection(mcpName);
+};
+
+// Export function to close all connections (useful for cleanup)
+export const closeAllPooledConnections = (): Promise<void> => {
+  return connectionPool.closeAllConnections();
+};
+
+// Export function to get pool statistics (for debugging)
+export const getPoolStats = () => {
+  return connectionPool.getPoolStats();
+};
 
 // Connect to PM2
 export const connectToPm2 = async (): Promise<void> => {
@@ -167,97 +379,15 @@ export const getPackageConfig = (
   return { cwdAbsolute, env, cmd, cmdArgs };
 };
 
-// Setup MCP connection
+// Setup MCP connection (legacy function, kept for backward compatibility)
 export const setupMcpConnection = async (
   mcpName: string,
   spinner?: any
 ): Promise<ConnectionResources | null> => {
-  // Store resources to clean up
-  let client: McpClient | null = null;
-  let transport: McpTransport | null = null;
-
-  try {
-    // Dynamically import the MCP SDK
-    const ClientModule = await import(
-      "@modelcontextprotocol/sdk/client/index.js"
-    );
-    const StdioModule = await import(
-      "@modelcontextprotocol/sdk/client/stdio.js"
-    );
-
-    const Client = ClientModule.Client;
-    const StdioClientTransport = StdioModule.StdioClientTransport;
-
-    // Connect to PM2
-    await connectToPm2();
-
-    // Check if the process is running
-    const isRunning = await checkProcessStatus(mcpName, spinner);
-    if (!isRunning) {
-      await disconnectFromPm2();
-      return null;
-    }
-
-    // Get package configuration
-    const { cwdAbsolute, env, cmd, cmdArgs } = getPackageConfig(mcpName);
-
-    // Create an MCP client
-    client = new Client({
-      name: "furikake-cli",
-      version: "0.0.1",
-    });
-
-    // Create direct stdio transport with environment variables
-    transport = new StdioClientTransport({
-      command: cmd,
-      args: cmdArgs,
-      cwd: cwdAbsolute,
-      env: env,
-      stderr: "ignore", // Suppress console output from the MCP server
-    });
-
-    await client.connect(transport);
-
-    return {
-      client,
-      transport,
-      disconnect: async () => {
-        try {
-          // Close transport if it exists
-          if (transport && typeof transport.close === "function") {
-            await transport.close();
-          }
-
-          // Close client if it exists
-          if (client && typeof client.close === "function") {
-            await client.close();
-          }
-
-          // Disconnect from PM2
-          await disconnectFromPm2();
-        } catch (cleanupError) {
-          console.error("Error during cleanup:", cleanupError);
-        }
-      },
-    };
-  } catch (error: any) {
-    if (spinner) {
-      spinner.error(`[${mcpName}] Error: ${error.message || String(error)}`);
-    }
-
-    // Cleanup on error
-    try {
-      if (transport && typeof transport.close === "function") {
-        await transport.close();
-      }
-      if (client && typeof client.close === "function") {
-        await client.close();
-      }
-      await disconnectFromPm2();
-    } catch (cleanupError) {
-      console.error("Error during cleanup:", cleanupError);
-    }
-
-    return null;
+  // For backward compatibility, use the pooled connection
+  const connection = await getPooledConnection(mcpName);
+  if (!connection && spinner) {
+    spinner.error(`[${mcpName}] Failed to connect to MCP server`);
   }
+  return connection;
 };

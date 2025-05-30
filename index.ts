@@ -51,7 +51,6 @@ import {
 } from "@/http/server";
 import { envResponse } from "@/http/server/endpoints/[mcpName]/env";
 import { httpStatusResponse } from "@/http/server/endpoints/http/status";
-import { renamePackage } from "@/mcp/rename/action/renamePackage";
 import { renameMCPResponse } from "@/http/server/endpoints/[mcpName]/rename";
 
 const program = new Command();
@@ -244,9 +243,15 @@ program
   .option("-j, --json", "JSON output")
   .action((mcpName, toolName, data, options) => {
     if (options.json) {
-      jsonifyResponse(() => callResponse(`${mcpName}/call/${toolName}`, data));
+      jsonifyResponse(() =>
+        callResponse(`${mcpName}/call/${toolName}`, data)
+      ).then(() => {
+        process.exit(0);
+      });
     } else {
-      callTool(mcpName, toolName, data);
+      callTool(mcpName, toolName, data).then(() => {
+        process.exit(0);
+      });
     }
   });
 

@@ -1,4 +1,3 @@
-import { setupMcpConnection } from "@/helpers/mcpConnectionManager";
 import { executeToolCall } from "@/tools/call/actions/callTool";
 import { extractMcpName } from "@/http/server/utils";
 
@@ -32,23 +31,8 @@ export const callResponse = async (pathname: string, body: any) => {
     );
   }
 
-  let disconnect: (() => Promise<void>) | undefined;
   try {
-    // 1. Setup Connection (without spinner)
-    const resources = await setupMcpConnection(mcpName); // Pass undefined for spinner
-    if (!resources || !resources.client) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: `Failed to connect to MCP: ${mcpName}`,
-        }),
-        { status: 503 } // Service Unavailable
-      );
-    }
-    disconnect = resources.disconnect;
-    const client = resources.client;
-
-    // 2. Prepare arguments for executeToolCall
+    // Prepare arguments for executeToolCall
     // executeToolCall expects data as a string. Handle both CLI (string) and HTTP (object) inputs.
     let dataString: string;
     try {
@@ -69,10 +53,10 @@ export const callResponse = async (pathname: string, body: any) => {
       );
     }
 
-    // 3. Execute Tool Call
-    const result = await executeToolCall(client, toolName, dataString);
+    // Execute Tool Call using the updated function signature
+    const result = await executeToolCall(mcpName, toolName, dataString);
 
-    // 4. Handle Result/Error from executeToolCall
+    // Handle Result/Error from executeToolCall
     if (result && result.error) {
       // Error explicitly returned by executeToolCall (e.g., tool not found, invalid args)
       return new Response(
@@ -90,16 +74,5 @@ export const callResponse = async (pathname: string, body: any) => {
       JSON.stringify({ success: false, error: formatError(error) }),
       { status: 500 } // Internal Server Error
     );
-  } finally {
-    // 5. Ensure Disconnection
-    if (disconnect) {
-      await disconnect().catch((disconnectError) => {
-        // Log disconnect error but don't affect the response sent to the client
-        console.error(
-          `[${mcpName}] Error disconnecting after tool call API request:`,
-          disconnectError
-        );
-      });
-    }
   }
 };

@@ -1,23 +1,21 @@
-import type { McpClient } from "@/helpers/mcpConnectionManager";
+import { getPooledConnection } from "@/helpers/mcpConnectionManager";
 
 export const executeToolCall = async (
-  client: McpClient,
+  mcpName: string,
   toolName: string,
   data: string
 ): Promise<any | { error: any }> => {
-  // Using 'any' for the result type temporarily
   try {
-    // List available tools to validate the requested tool
-    const tools = await client.listTools();
-    const requestedTool = tools.tools.find(
-      (tool: any) => tool.name === toolName
-    );
+    // Get a pooled connection to the MCP server
+    const connection = await getPooledConnection(mcpName);
 
-    if (!requestedTool) {
+    if (!connection) {
       throw new Error(
-        `Tool '${toolName}' not found. To view tools, use furi tools <mcpName>`
+        `MCP server '${mcpName}' is not available. Start it first with furi start ${mcpName}`
       );
     }
+
+    const { client } = connection;
 
     // Parse and validate the input as JSON
     let toolParams: any;
@@ -35,7 +33,21 @@ export const executeToolCall = async (
       );
     }
 
-    // Call the tool
+    // List available tools to validate the requested tool
+    const tools = await client.listTools();
+    const requestedTool = tools.tools.find(
+      (tool: any) => tool.name === toolName
+    );
+
+    if (!requestedTool) {
+      throw new Error(
+        `Tool '${toolName}' not found. Available tools: ${tools.tools
+          .map((t: any) => t.name)
+          .join(", ")}`
+      );
+    }
+
+    // Call the tool using the pooled connection
     const result = await client.callTool({
       name: toolName,
       arguments: toolParams,
@@ -43,7 +55,7 @@ export const executeToolCall = async (
 
     return result;
   } catch (error) {
-    // Catch errors from listTools, parsing, or callTool and return them
+    // Return error in the expected format
     return { error: error };
   }
 };

@@ -1,5 +1,4 @@
 import { createSpinner } from "nanospinner";
-import { setupMcpConnection } from "@/helpers/mcpConnectionManager";
 import { executeToolCall } from "./actions/callTool";
 
 export const callTool = async (
@@ -10,24 +9,11 @@ export const callTool = async (
   const spinner = createSpinner(`[${mcpName}] Connecting to MCP server`);
   spinner.start();
 
-  let disconnect: (() => Promise<void>) | undefined;
-
   try {
-    // Setup MCP connection using shared utilities
-    const resources = await setupMcpConnection(mcpName, spinner);
-    if (!resources || !resources.client) {
-      // setupMcpConnection handles spinner error on failure
-      return; // Connection failed
-    }
-
-    // Assign disconnect here so it's available in finally
-    disconnect = resources.disconnect;
-    const client = resources.client;
-
     spinner.update(`[${mcpName}] Sending tool call request to '${toolName}'`);
 
-    // Call the tool using the action
-    const result = await executeToolCall(client, toolName, data);
+    // Call the tool using the updated action - no need for setupMcpConnection anymore
+    const result = await executeToolCall(mcpName, toolName, data);
 
     // --- Display Logic (kept in index.ts) ---
     if (result && result.error) {
@@ -96,20 +82,6 @@ export const callTool = async (
   } catch (error: any) {
     // Catch connection errors or unexpected issues
     spinner.error(`[${mcpName}] Error: ${formatErrorDetails(error)}`);
-  } finally {
-    // Ensure disconnection happens even if errors occur
-    if (disconnect) {
-      try {
-        await disconnect();
-      } catch (disconnectError) {
-        // Log disconnect error but don't overwrite original error
-        console.error(
-          `[${mcpName}] Error during disconnection: ${formatErrorDetails(
-            disconnectError
-          )}`
-        );
-      }
-    }
   }
 };
 
