@@ -41,17 +41,32 @@ export class McpConnectionPool {
     const existing = this.connections.get(connectionKey);
     if (existing) {
       try {
-        // Test if connection is still alive by making a simple call
+        // Test if connection is still alive - first check transport, then make a simple call
+        if (
+          existing.transport &&
+          typeof (existing.transport as any).testConnection === "function"
+        ) {
+          const isHealthy = await (existing.transport as any).testConnection();
+          if (!isHealthy) {
+            throw new Error("Transport connection test failed");
+          }
+        }
+
+        // Also test if the MCP client is responsive
         await existing.client.listTools();
         return existing;
       } catch (error) {
         // Connection is dead, remove it and create a new one
-        console.warn(`[${mcpName}] Connection is dead, recreating...`);
+        console.warn(`[${mcpName}] Connection is dead, recreating...`, error);
         this.connections.delete(connectionKey);
         try {
           await existing.disconnect();
         } catch (disconnectError) {
           // Ignore disconnect errors for dead connections
+          console.debug(
+            `[${mcpName}] Ignored disconnect error for dead connection:`,
+            disconnectError
+          );
         }
       }
     }
@@ -79,7 +94,7 @@ export class McpConnectionPool {
 
   private async createConnection(
     mcpName: string,
-    connectionKey: string,
+    connectionKey: string
   ): Promise<ConnectionResources | null> {
     try {
       // Dynamically import the MCP SDK
@@ -125,11 +140,11 @@ export class McpConnectionPool {
         } catch (error) {
           console.warn(
             `[${mcpName}] Failed to create Unix socket transport, falling back to stdio:`,
-            error,
+            error
           );
           // Do not fall back to stdio, as we need to maintain the PM2 process relationship
           console.error(
-            `[${mcpName}] Failed to create Unix socket transport and no fallback available`,
+            `[${mcpName}] Failed to create Unix socket transport and no fallback available`
           );
           throw error; // Re-throw to properly handle the error
         }
@@ -137,15 +152,17 @@ export class McpConnectionPool {
         // Unix socket not found - log this for debugging
         if (process.env.DEBUG || process.env.VERBOSE) {
           console.log(
-            `[${mcpName}] Unix socket not found at ${socketPath}, using stdio transport`,
+            `[${mcpName}] Unix socket not found at ${socketPath}, using stdio transport`
           );
         }
         // Unix socket not found - we cannot proceed
         console.error(
-          `[${mcpName}] Unix socket not found${socketPath ? ` at ${socketPath}` : ''} and no fallback available`,
+          `[${mcpName}] Unix socket not found${
+            socketPath ? ` at ${socketPath}` : ""
+          } and no fallback available`
         );
         throw new Error(
-          `Unix socket not available for ${mcpName}. Make sure the MCP is running with 'furi start ${mcpName}'`,
+          `Unix socket not available for ${mcpName}. Make sure the MCP is running with 'furi start ${mcpName}'`
         );
       }
 
@@ -155,11 +172,11 @@ export class McpConnectionPool {
         const connectError = error as Error;
         console.error(
           `[${mcpName}] Error during client.connect:`,
-          connectError,
+          connectError
         );
         // Add more context to the error
         throw new Error(
-          `Failed to connect to ${mcpName} MCP: ${connectError.message}`,
+          `Failed to connect to ${mcpName} MCP: ${connectError.message}`
         );
       }
 
@@ -194,7 +211,7 @@ export class McpConnectionPool {
       console.error(
         `[${mcpName}] Error creating connection: ${
           error.message || String(error)
-        }`,
+        }`
       );
 
       // Cleanup on error
@@ -232,7 +249,7 @@ export class McpConnectionPool {
         } catch (error) {
           console.error(`[${connectionKey}] Error closing connection:`, error);
         }
-      }),
+      })
     );
   }
 
@@ -254,7 +271,7 @@ const connectionPool = new McpConnectionPool("furi");
 
 // Export function to get pooled connection
 export const getPooledConnection = (
-  mcpName: string,
+  mcpName: string
 ): Promise<ConnectionResources | null> => {
   return connectionPool.getConnection(mcpName);
 };
@@ -290,16 +307,16 @@ export const isUnixSocketAvailable = (mcpName: string): boolean => {
 
 // Export function to get connection info for an MCP
 export const getConnectionInfo = async (
-  mcpName: string,
+  mcpName: string
 ): Promise<{
   isRunning: boolean;
   hasUnixSocket: boolean;
   socketPath: string;
   transportType?: "unix" | "stdio";
 }> => {
-  const socketPath = getSocketPath(mcpName) || resolveFromBase(
-    `/transport/furi_${mcpName.replace("/", "-")}.sock`,
-  );
+  const socketPath =
+    getSocketPath(mcpName) ||
+    resolveFromBase(`/transport/furi_${mcpName.replace("/", "-")}.sock`);
 
   try {
     await connectToPm2();
@@ -371,7 +388,7 @@ export const getPm2ProcessInfo = async (processName: string): Promise<any> => {
 // Check if process is running and valid
 export const checkProcessStatus = async (
   mcpName: string,
-  spinner?: any,
+  spinner?: any
 ): Promise<boolean> => {
   const processName = `furi_${mcpName.replace("/", "-")}`;
   const list = await getPm2List();
@@ -381,7 +398,7 @@ export const checkProcessStatus = async (
   if (!processEntry) {
     if (spinner) {
       spinner.error(
-        `[${mcpName}] Server not running \n     \x1b[2mStart it first with furi start ${mcpName}\x1b[0m`,
+        `[${mcpName}] Server not running \n     \x1b[2mStart it first with furi start ${mcpName}\x1b[0m`
       );
     }
     return false;
@@ -390,7 +407,7 @@ export const checkProcessStatus = async (
   if (processEntry.pm2_env.status !== "online") {
     if (spinner) {
       spinner.error(
-        `[${mcpName}] Process is not running (status: ${processEntry.pm2_env.status})`,
+        `[${mcpName}] Process is not running (status: ${processEntry.pm2_env.status})`
       );
     }
     return false;
@@ -401,7 +418,7 @@ export const checkProcessStatus = async (
 
 // Get configuration for a package
 export const getPackageConfig = (
-  mcpName: string,
+  mcpName: string
 ): {
   cwdAbsolute: string;
   env: Record<string, string>;
@@ -470,13 +487,13 @@ export const getPackageConfig = (
 // Setup MCP connection (legacy function, kept for backward compatibility)
 export const setupMcpConnection = async (
   mcpName: string,
-  spinner?: any,
+  spinner?: any
 ): Promise<ConnectionResources | null> => {
   // For backward compatibility, use the pooled connection
   const connection = await getPooledConnection(mcpName);
   if (!connection && spinner) {
     spinner.error(
-      `[${mcpName}] Failed to connect to MCP server. Make sure it's running with 'furi start ${mcpName}'`,
+      `[${mcpName}] Failed to connect to MCP server. Make sure it's running with 'furi start ${mcpName}'`
     );
   }
   return connection;

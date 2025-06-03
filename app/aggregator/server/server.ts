@@ -48,7 +48,7 @@ function createToolName(mcpName: string, toolName: string): string {
   const halfSpace = Math.floor(availableSpace / 2);
   const result = `${mcpName.substring(0, halfSpace)}-${toolName.substring(
     0,
-    halfSpace,
+    halfSpace
   )}`;
   return result.replace("--", "-");
 }
@@ -106,8 +106,9 @@ async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
             execute: async (args: any) => {
               try {
                 // Use the aggregator's pooled connection - maintains persistence across calls
-                const pooledConnection =
-                  await aggregatorPool.getConnection(mcpName);
+                const pooledConnection = await aggregatorPool.getConnection(
+                  mcpName
+                );
                 if (!pooledConnection || !pooledConnection.client) {
                   throw new Error(`Failed to connect to MCP: ${mcpName}`);
                 }
@@ -125,13 +126,13 @@ async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
                 if (!isStdioMode()) {
                   console.error(
                     `Error calling ${tool.name} on ${mcpName}:`,
-                    error,
+                    error
                   );
                 }
                 throw new Error(
                   `Failed to execute ${tool.name}: ${
                     error.message || "Unknown error"
-                  }`,
+                  }`
                 );
               }
             },
@@ -141,7 +142,7 @@ async function getToolsFromAllMcps(): Promise<McpToolGroup[]> {
         // Keep error logs but make them less verbose
         if (!isStdioMode()) {
           console.error(
-            `Error with MCP ${mcpName}: ${error.message || String(error)}`,
+            `Error with MCP ${mcpName}: ${error.message || String(error)}`
           );
         }
       }
@@ -254,7 +255,7 @@ function startToolsPolling(intervalMs = 10000) {
           // Only log the change details when it happens for easier troubleshooting
           if (!isStdioMode()) {
             console.log(
-              `MCP list changed: ${previousMcpList.length} → ${currentMcpList.length} MCPs`,
+              `MCP list changed: ${previousMcpList.length} → ${currentMcpList.length} MCPs`
             );
           }
 
@@ -273,7 +274,7 @@ function startToolsPolling(intervalMs = 10000) {
 
   if (!isStdioMode()) {
     console.log(
-      `Tool polling enabled (interval: ${intervalMs}ms) - persistent connections maintained`,
+      `Tool polling enabled (interval: ${intervalMs}ms) - persistent connections maintained`
     );
   }
 }
@@ -384,9 +385,9 @@ async function updateTools() {
                           nestedObj[nestedKey] = z
                             .any()
                             .describe(
-                              (nestedProp as any).description || nestedKey,
+                              (nestedProp as any).description || nestedKey
                             );
-                        },
+                        }
                       );
                       zodType = z.object(nestedObj);
                     } else {
@@ -412,7 +413,7 @@ async function updateTools() {
                 }
 
                 schemaObj[key] = zodType;
-              },
+              }
             );
             parameters = z.object(schemaObj);
           } else {
@@ -487,7 +488,7 @@ async function updateTools() {
           console.log(
             `Restarting server with original transport (port: ${
               port || "unknown"
-            })`,
+            })`
           );
         }
         server.start({
@@ -496,7 +497,7 @@ async function updateTools() {
         });
         if (!isStdioMode()) {
           console.log(
-            "Server restarted with updated tools using original transport",
+            "Server restarted with updated tools using original transport"
           );
         }
       }
@@ -523,7 +524,7 @@ async function addTools() {
     // Concise log for initial setup
     if (!isStdioMode()) {
       console.log(
-        `Initializing with ${previousMcpList.length} MCPs (persistent connections)`,
+        `Initializing with ${previousMcpList.length} MCPs (persistent connections)`
       );
     }
 
@@ -617,9 +618,9 @@ async function addTools() {
                           nestedObj[nestedKey] = z
                             .any()
                             .describe(
-                              (nestedProp as any).description || nestedKey,
+                              (nestedProp as any).description || nestedKey
                             );
-                        },
+                        }
                       );
                       zodType = z.object(nestedObj);
                     } else {
@@ -645,7 +646,7 @@ async function addTools() {
                 }
 
                 schemaObj[key] = zodType;
-              },
+              }
             );
             parameters = z.object(schemaObj);
           } else {
@@ -669,7 +670,7 @@ async function addTools() {
     // Single summary log instead of per-MCP logs
     if (!isStdioMode()) {
       console.log(
-        `Initialized ${totalTools} tools from ${mcpTools.length} MCPs with persistent connections`,
+        `Initialized ${totalTools} tools from ${mcpTools.length} MCPs with persistent connections`
       );
     }
   } catch (error: any) {

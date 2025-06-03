@@ -49,7 +49,9 @@ async function start() {
       await startServer(transportConfig);
     } else {
       if (!isStdioMode()) {
-        console.log("[Aggregator] Starting server with stdio transport (persistent mode)...");
+        console.log(
+          "[Aggregator] Starting server with stdio transport (persistent mode)..."
+        );
       }
       // Start the server with stdio transport - this maintains persistent connections
       const transportConfig = {
@@ -60,19 +62,25 @@ async function start() {
 
     serverStarted = true;
     if (!isStdioMode()) {
-      console.log("[Aggregator] Server started successfully with persistent connections");
+      console.log(
+        "[Aggregator] Server started successfully with persistent connections"
+      );
     }
 
     // Keep the process alive - don't exit for stdio mode
     if (transportType === "stdio") {
       if (!isStdioMode()) {
-        console.log("[Aggregator] Stdio transport active - maintaining persistent MCP connections");
+        console.log(
+          "[Aggregator] Stdio transport active - maintaining persistent MCP connections"
+        );
       }
-      
+
       // Set up a heartbeat to check health every 30 seconds
       const intervalId = setInterval(() => {
         if (!isStdioMode()) {
-          console.log("[Aggregator] Heartbeat: server is running with persistent connections");
+          console.log(
+            "[Aggregator] Heartbeat: server is running with persistent connections"
+          );
         }
       }, 30000);
 
@@ -80,11 +88,13 @@ async function start() {
       process.on("beforeExit", () => {
         clearInterval(intervalId);
       });
-      
+
       // For stdio, we need to ensure the process stays alive
       // The process will only exit on explicit signals or errors
       if (!isStdioMode()) {
-        console.log("[Aggregator] Process will maintain persistent connections until explicitly stopped");
+        console.log(
+          "[Aggregator] Process will maintain persistent connections until explicitly stopped"
+        );
       }
     }
   } catch (error: any) {

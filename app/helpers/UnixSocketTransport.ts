@@ -14,6 +14,7 @@ export class UnixSocketTransport {
   private socketPath: string;
   private buffer: string = "";
   private isConnected: boolean = false;
+  private isConnecting: boolean = false;
   private connecting: Promise<void> | null = null;
 
   // These handlers are set by the MCP Protocol class
@@ -30,6 +31,18 @@ export class UnixSocketTransport {
   }
 
   /**
+   * Check if the socket is in a writable state
+   */
+  private isSocketWritable(): boolean {
+    return (
+      this.socket !== null &&
+      this.isConnected &&
+      !this.socket.destroyed &&
+      this.socket.writable
+    );
+  }
+
+  /**
    * Initializes and connects to the Unix socket
    * This method is required by the MCP SDK and is called by the Protocol class
    */
@@ -42,19 +55,28 @@ export class UnixSocketTransport {
       return this.connecting;
     }
 
+    this.isConnecting = true;
     this.connecting = new Promise<void>((resolve, reject) => {
       try {
         this.socket = new Socket();
+
+        // Set socket options to detect connection issues faster
+        this.socket.setKeepAlive(true, 5000); // Enable keep-alive with 5s initial delay
+        this.socket.setTimeout(30000); // 30 second timeout
 
         // Set up event handlers
         this.socket.on("connect", () => {
           // console.log(`[UnixSocket] Connected to ${this.socketPath}`);
           this.isConnected = true;
+          this.isConnecting = false;
           resolve();
         });
 
         this.socket.on("error", (error) => {
           // console.error(`[UnixSocket] Error: ${error.message}`);
+          this.isConnected = false;
+          this.isConnecting = false;
+
           if (this.onerror) {
             this.onerror(error);
           }
@@ -64,12 +86,19 @@ export class UnixSocketTransport {
           }
         });
 
-        this.socket.on("close", () => {
-          // console.log(`[UnixSocket] Connection closed`);
+        this.socket.on("close", (hadError) => {
+          // console.log(`[UnixSocket] Connection closed${hadError ? ' with error' : ''}`);
           this.isConnected = false;
+          this.isConnecting = false;
+
           if (this.onclose) {
             this.onclose();
           }
+        });
+
+        this.socket.on("timeout", () => {
+          // console.warn(`[UnixSocket] Socket timeout on ${this.socketPath}`);
+          this.socket?.destroy();
         });
 
         this.socket.on("data", (data) => {
@@ -88,6 +117,7 @@ export class UnixSocketTransport {
                 }
               } catch (error) {
                 // console.error("[UnixSocket] Failed to parse message:", error);
+                // Don't propagate parse errors as they might be recoverable
               }
             }
           }
@@ -97,6 +127,7 @@ export class UnixSocketTransport {
         this.socket.connect(this.socketPath);
       } catch (error) {
         this.isConnected = false;
+        this.isConnecting = false;
         reject(error);
       }
     });
@@ -116,20 +147,34 @@ export class UnixSocketTransport {
    * @param message The message to send (will be JSON-stringified)
    */
   async send(message: any): Promise<void> {
-    if (!this.isConnected) {
+    if (!this.isConnected || this.isConnecting) {
       await this.start();
     }
 
-    if (!this.socket) {
-      throw new Error("Socket not connected");
+    if (!this.isSocketWritable()) {
+      throw new Error("Socket not connected or not writable");
     }
 
     const data = JSON.stringify(message) + "\n";
 
     return new Promise<void>((resolve, reject) => {
+      if (!this.isSocketWritable()) {
+        reject(new Error("Socket became unavailable before write"));
+        return;
+      }
+
       this.socket!.write(data, (error) => {
         if (error) {
-          reject(error);
+          // Handle specific EPIPE errors more gracefully
+          if ((error as any).code === "EPIPE") {
+            const epipeError = new Error(
+              `Connection broken: The remote MCP server closed the connection unexpectedly. Try restarting the MCP server.`
+            );
+            epipeError.name = "ConnectionBrokenError";
+            reject(epipeError);
+          } else {
+            reject(error);
+          }
         } else {
           resolve();
         }
@@ -138,14 +183,60 @@ export class UnixSocketTransport {
   }
 
   /**
+   * Test if the connection is still alive by attempting a small write
+   */
+  async testConnection(): Promise<boolean> {
+    if (!this.isSocketWritable()) {
+      return false;
+    }
+
+    return new Promise<boolean>((resolve) => {
+      // Use a very small operation to test connectivity
+      // We'll just check if the socket is still writable
+      try {
+        if (this.socket?.writable && !this.socket.destroyed) {
+          resolve(true);
+        } else {
+          resolve(false);
+        }
+      } catch (error) {
+        resolve(false);
+      }
+    });
+  }
+
+  /**
    * Closes the Unix socket connection
    */
   async close(): Promise<void> {
     if (this.socket) {
-      this.socket.destroy();
-      this.socket = null;
-      this.isConnected = false;
-      this.connecting = null;
+      return new Promise<void>((resolve) => {
+        const cleanup = () => {
+          this.socket = null;
+          this.isConnected = false;
+          this.isConnecting = false;
+          this.connecting = null;
+          resolve();
+        };
+
+        if (this.socket?.destroyed) {
+          cleanup();
+          return;
+        }
+
+        // Set a timeout for cleanup
+        const timeoutId = setTimeout(() => {
+          this.socket?.destroy();
+          cleanup();
+        }, 1000);
+
+        this.socket?.once("close", () => {
+          clearTimeout(timeoutId);
+          cleanup();
+        });
+
+        this.socket?.end();
+      });
     }
   }
 }
