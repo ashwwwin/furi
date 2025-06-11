@@ -39,7 +39,7 @@ async function createTransportWrapper(
     // Create a wrapper script that:
     // 1. Starts the original MCP server with stdio
     // 2. Creates a Unix socket for additional connections
-    // 3. Optionally starts an HTTP server for network connections
+    // 3. Properly handles TypeScript execution
 
     const wrapperPath = join(
       packagePath,
@@ -53,6 +53,52 @@ async function createTransportWrapper(
     const transportDir = dirname(socketPath);
     if (!existsSync(transportDir)) {
       mkdirSync(transportDir, { recursive: true });
+    }
+
+    // Parse the original command to handle TypeScript files properly
+    const parts = originalRunCommand.split(" ");
+    let executionCommand = originalRunCommand;
+
+    // Check if the command tries to execute a .ts file directly
+    const hasTypeScriptFile = parts.some(
+      (part) => part.endsWith(".ts") || part.endsWith(".tsx")
+    );
+
+    if (hasTypeScriptFile) {
+      // Check if ts-node or tsx is available
+      const hasTsNode = existsSync(
+        join(packagePath, "node_modules", ".bin", "ts-node")
+      );
+      const hasTsx = existsSync(
+        join(packagePath, "node_modules", ".bin", "tsx")
+      );
+
+      if (hasTsx) {
+        // Prefer tsx for better compatibility
+        executionCommand = originalRunCommand.replace(/^node\s+/, "npx tsx ");
+      } else if (hasTsNode) {
+        // Use ts-node with proper ESM support
+        if (isESM) {
+          executionCommand = originalRunCommand.replace(
+            /^node\s+/,
+            "node --loader ts-node/esm "
+          );
+        } else {
+          executionCommand = originalRunCommand.replace(
+            /^node\s+/,
+            "npx ts-node "
+          );
+        }
+      } else {
+        // Install tsx as fallback for TypeScript execution
+        try {
+          await Bun.$`cd ${packagePath} && npm install --save-dev tsx`.quiet();
+          executionCommand = originalRunCommand.replace(/^node\s+/, "npx tsx ");
+        } catch (installError) {
+          console.warn(`Failed to install tsx: ${String(installError)}`);
+          // Keep original command as fallback
+        }
+      }
     }
 
     // Generate appropriate wrapper based on module type
@@ -75,7 +121,7 @@ const __dirname = path.dirname(__filename);
 
 const mcpName = '${mcpName}';
 const socketPath = '${socketPath}';
-const originalCommand = ${JSON.stringify(originalRunCommand)};
+const originalCommand = ${JSON.stringify(executionCommand)};
 
 // Ensure the transport directory exists
 const transportDir = path.dirname(socketPath);
@@ -88,21 +134,19 @@ if (fs.existsSync(socketPath)) {
   fs.unlinkSync(socketPath);
 }
 
-// Parse the original command
-const parts = originalCommand.split(' ');
-const cmd = parts[0];
-const args = parts.slice(1);
-
-// Start the original MCP server in the correct directory
-// console.log('[Furikake] DEBUG: Wrapper script starting...');
-// console.log('[Furikake] Starting MCP server:', originalCommand);
-// console.log('[Furikake] DEBUG: Working directory:', __dirname);
-// console.log('[Furikake] DEBUG: Socket path:', socketPath);
-const mcpProcess = spawn(cmd, args, {
-  cwd: __dirname, // Ensure we're in the package directory
-  env: process.env,
-  stdio: 'pipe'
-});
+// Enhanced command parsing with shell execution
+let mcpProcess;
+try {
+  // Use shell execution for better command handling
+  mcpProcess = spawn('sh', ['-c', originalCommand], {
+    cwd: __dirname, // Ensure we're in the package directory
+    env: { ...process.env, NODE_OPTIONS: '--no-warnings' },
+    stdio: 'pipe'
+  });
+} catch (spawnError) {
+  console.error('[Furikake] Failed to spawn MCP process:', spawnError);
+  throw spawnError;
+}
 
 // Forward stdio for PM2 compatibility
 mcpProcess.stdout.on('data', (data) => process.stdout.write(data));
@@ -111,16 +155,16 @@ process.stdin.pipe(mcpProcess.stdin);
 
 // Create Unix socket server for additional connections
 const server = net.createServer((socket) => {
-  console.log('[Furikake] Client connected via Unix socket');
+  // console.log('[Furikake] Client connected via Unix socket');
 
   // Handle socket errors gracefully
   socket.on('error', (err) => {
-    console.log('[Furikake] Socket error:', err.message);
+    // console.log('[Furikake] Socket error:', err.message);
     // Don't crash the server on individual socket errors
   });
 
   socket.on('close', () => {
-    console.log('[Furikake] Client disconnected from Unix socket');
+    // console.log('[Furikake] Client disconnected from Unix socket');
   });
 
   // Create bidirectional pipe between socket and MCP process with error handling
@@ -129,35 +173,32 @@ const server = net.createServer((socket) => {
 
   // Handle pipe errors
   mcpProcess.stdout.on('error', (err) => {
-    console.log('[Furikake] MCP stdout error:', err.message);
+    // console.log('[Furikake] MCP stdout error:', err.message);
     try { socket.destroy(); } catch (e) { /* ignore */ }
   });
 
   mcpProcess.stdin.on('error', (err) => {
-    console.log('[Furikake] MCP stdin error:', err.message);
+    // console.log('[Furikake] MCP stdin error:', err.message);
     try { socket.destroy(); } catch (e) { /* ignore */ }
   });
 });
 
 server.listen(socketPath, () => {
-  // console.log('[Furikake] Unix socket listening at:', socketPath);
-  // console.log('[Furikake] DEBUG: Socket file created successfully');
   // Set permissions so other processes can connect
   fs.chmodSync(socketPath, '666');
-  // console.log('[Furikake] DEBUG: Socket permissions set to 666');
 });
 
 // Handle process termination
 process.on('SIGINT', cleanup);
 process.on('SIGTERM', cleanup);
 mcpProcess.on('exit', (code) => {
-  console.log('[Furikake] MCP process exited with code:', code);
+  // console.log('[Furikake] MCP process exited with code:', code);
   cleanup();
   process.exit(code || 0);
 });
 
 function cleanup() {
-  console.log('[Furikake] Cleaning up...');
+  // console.log('[Furikake] Cleaning up...');
   if (fs.existsSync(socketPath)) {
     fs.unlinkSync(socketPath);
   }
@@ -180,7 +221,7 @@ const path = require('path');
 
 const mcpName = '${mcpName}';
 const socketPath = '${socketPath}';
-const originalCommand = ${JSON.stringify(originalRunCommand)};
+const originalCommand = ${JSON.stringify(executionCommand)};
 
 // Ensure the transport directory exists
 const transportDir = path.dirname(socketPath);
@@ -193,21 +234,19 @@ if (fs.existsSync(socketPath)) {
   fs.unlinkSync(socketPath);
 }
 
-// Parse the original command
-const parts = originalCommand.split(' ');
-const cmd = parts[0];
-const args = parts.slice(1);
-
-// Start the original MCP server in the correct directory
-// console.log('[Furikake] DEBUG: Wrapper script starting...');
-// console.log('[Furikake] Starting MCP server:', originalCommand);
-// console.log('[Furikake] DEBUG: Working directory:', __dirname);
-// console.log('[Furikake] DEBUG: Socket path:', socketPath);
-const mcpProcess = spawn(cmd, args, {
-  cwd: __dirname, // Ensure we're in the package directory
-  env: process.env,
-  stdio: 'pipe'
-});
+// Enhanced command parsing with shell execution
+let mcpProcess;
+try {
+  // Use shell execution for better command handling
+  mcpProcess = spawn('sh', ['-c', originalCommand], {
+    cwd: __dirname, // Ensure we're in the package directory
+    env: { ...process.env, NODE_OPTIONS: '--no-warnings' },
+    stdio: 'pipe'
+  });
+} catch (spawnError) {
+  console.error('[Furikake] Failed to spawn MCP process:', spawnError);
+  throw spawnError;
+}
 
 // Forward stdio for PM2 compatibility
 mcpProcess.stdout.on('data', (data) => process.stdout.write(data));
@@ -216,16 +255,16 @@ process.stdin.pipe(mcpProcess.stdin);
 
 // Create Unix socket server for additional connections
 const server = net.createServer((socket) => {
-  console.log('[Furikake] Client connected via Unix socket');
+  // console.log('[Furikake] Client connected via Unix socket');
 
   // Handle socket errors gracefully
   socket.on('error', (err) => {
-    console.log('[Furikake] Socket error:', err.message);
+    // console.log('[Furikake] Socket error:', err.message);
     // Don't crash the server on individual socket errors
   });
 
   socket.on('close', () => {
-    console.log('[Furikake] Client disconnected from Unix socket');
+    // console.log('[Furikake] Client disconnected from Unix socket');
   });
 
   // Create bidirectional pipe between socket and MCP process with error handling
@@ -234,35 +273,32 @@ const server = net.createServer((socket) => {
 
   // Handle pipe errors
   mcpProcess.stdout.on('error', (err) => {
-    console.log('[Furikake] MCP stdout error:', err.message);
+    // console.log('[Furikake] MCP stdout error:', err.message);
     try { socket.destroy(); } catch (e) { /* ignore */ }
   });
 
   mcpProcess.stdin.on('error', (err) => {
-    console.log('[Furikake] MCP stdin error:', err.message);
+    // console.log('[Furikake] MCP stdin error:', err.message);
     try { socket.destroy(); } catch (e) { /* ignore */ }
   });
 });
 
 server.listen(socketPath, () => {
-  // console.log('[Furikake] Unix socket listening at:', socketPath);
-  // console.log('[Furikake] DEBUG: Socket file created successfully');
   // Set permissions so other processes can connect
   fs.chmodSync(socketPath, '666');
-  // console.log('[Furikake] DEBUG: Socket permissions set to 666');
 });
 
 // Handle process termination
 process.on('SIGINT', cleanup);
 process.on('SIGTERM', cleanup);
 mcpProcess.on('exit', (code) => {
-  console.log('[Furikake] MCP process exited with code:', code);
+  // console.log('[Furikake] MCP process exited with code:', code);
   cleanup();
   process.exit(code || 0);
 });
 
 function cleanup() {
-  console.log('[Furikake] Cleaning up...');
+  // console.log('[Furikake] Cleaning up...');
   if (fs.existsSync(socketPath)) {
     fs.unlinkSync(socketPath);
   }
@@ -394,11 +430,16 @@ export const initializePackage = async (
               : Object.values(packageJson.bin)[0];
 
           if (binEntry) {
-            // If the package has a binary, run that directly
-            // Ensure it's executed with node if it's a JS file, might need adjustment based on shebang or file type
-            runCommand = binEntry.endsWith(".js")
-              ? `node ${binEntry}`
-              : binEntry;
+            // Handle different file types appropriately
+            if (binEntry.endsWith(".js")) {
+              runCommand = `node ${binEntry}`;
+            } else if (binEntry.endsWith(".ts") || binEntry.endsWith(".tsx")) {
+              // Use tsx for TypeScript files instead of node directly
+              runCommand = `npx tsx ${binEntry}`;
+            } else {
+              // For other files, execute directly (assuming they have proper shebang)
+              runCommand = binEntry;
+            }
           }
         }
       }
@@ -474,36 +515,35 @@ export const initializePackage = async (
 
               // Create the appropriate wrapper based on module type
               if (isEsm) {
-                // ESM wrapper
+                // ESM wrapper using tsx for better compatibility
                 const esmWrapper = `
-import { register } from 'ts-node';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-
-// Register ts-node
-register({ transpileOnly: true, swc: true });
+import { spawn } from 'child_process';
 
 // Get current file's directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Import the TypeScript file
+// TypeScript file path
 const srcPath = join(__dirname, '${foundTsFile.relativePath}');
 
-// Dynamic import with error handling
-export default async function init() {
-  try {
-    return await import(srcPath);
-  } catch (error) {
-    console.error('Error loading TypeScript files:', error);
-    throw error;
-  }
-}
+// Use tsx to execute TypeScript file
+const child = spawn('npx', ['tsx', srcPath], {
+  stdio: 'inherit',
+  cwd: __dirname
+});
 
-// Initialize
-init().catch(err => {
-  console.error(err);
-  process.exit(1);
+child.on('exit', (code) => {
+  process.exit(code || 0);
+});
+
+process.on('SIGINT', () => {
+  child.kill('SIGINT');
+});
+
+process.on('SIGTERM', () => {
+  child.kill('SIGTERM');
 });
 `;
                 writeFileSync(join(distDir, "index.js"), esmWrapper, "utf-8");
@@ -518,28 +558,42 @@ init().catch(err => {
                   "utf-8"
                 );
               } else {
-                // CommonJS wrapper
+                // CommonJS wrapper using tsx for better compatibility
                 const cjsWrapper = `
 // This is an automatically generated CommonJS wrapper for TypeScript files
-try {
-  require('ts-node/register');
-  module.exports = require('${foundTsFile.relativePath}');
-} catch (error) {
-  console.error('Error loading TypeScript files:', error);
-  throw error;
-}
+const { spawn } = require('child_process');
+const path = require('path');
+
+// TypeScript file path
+const srcPath = path.join(__dirname, '${foundTsFile.relativePath}');
+
+// Use tsx to execute TypeScript file
+const child = spawn('npx', ['tsx', srcPath], {
+  stdio: 'inherit',
+  cwd: __dirname
+});
+
+child.on('exit', (code) => {
+  process.exit(code || 0);
+});
+
+process.on('SIGINT', () => {
+  child.kill('SIGINT');
+});
+
+process.on('SIGTERM', () => {
+  child.kill('SIGTERM');
+});
 `;
                 writeFileSync(join(distDir, "index.js"), cjsWrapper, "utf-8");
               }
 
-              // Add ts-node as a dependency
+              // Add tsx as a dependency instead of ts-node for better compatibility
               try {
-                await Bun.$`cd ${packagePath} && npm install --save-dev ts-node typescript @swc/core`.quiet();
+                await Bun.$`cd ${packagePath} && npm install --save-dev tsx typescript`.quiet();
                 buildSuccessful = true;
               } catch (installError) {
-                console.warn(
-                  `Failed to install ts-node: ${String(installError)}`
-                );
+                console.warn(`Failed to install tsx: ${String(installError)}`);
               }
             } else {
               console.warn(`Could not find TypeScript entry point`);
@@ -561,6 +615,34 @@ try {
 
     // Determine the final run command, potentially overriding based on build output
     let finalRunCommand = runCommand;
+
+    // Safety check: ensure no TypeScript files are executed directly with node
+    if (
+      finalRunCommand &&
+      finalRunCommand.includes("node ") &&
+      (finalRunCommand.includes(".ts") || finalRunCommand.includes(".tsx"))
+    ) {
+      // Replace node with tsx for TypeScript files
+      finalRunCommand = finalRunCommand.replace(/^node\s+/, "npx tsx ");
+    }
+
+    // If no run command was found and we have TypeScript files, create a default one
+    if (!finalRunCommand && hasTsConfig) {
+      // Check for TypeScript entry points
+      const potentialEntries = [
+        "src/index.ts",
+        "index.ts",
+        "src/main.ts",
+        "main.ts",
+      ];
+
+      for (const entry of potentialEntries) {
+        if (existsSync(join(packagePath, entry))) {
+          finalRunCommand = `npx tsx ${entry}`;
+          break;
+        }
+      }
+    }
 
     // If a build was successful and the run command seems to use a source runner
     const sourceRunners = ["ts-node", "tsx"];
@@ -670,6 +752,11 @@ try {
       if (!config.installed) {
         config.installed = {};
       }
+
+      // Debug: Log the final run command
+      // console.log(
+      //   `[${mcpName}] Final run command before wrapper: ${finalRunCommand}`
+      // );
 
       // Create transport wrapper for the MCP server
       const wrapperCreated = await createTransportWrapper(
