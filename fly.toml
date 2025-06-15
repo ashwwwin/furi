@@ -7,6 +7,7 @@ app = 'furi'
 primary_region = 'sjc'
 
 [build]
+dockerfile = "Dockerfile"
 
 [http_service]
 internal_port = 9339
@@ -20,13 +21,9 @@ processes = ['app']
 memory = '1gb'
 cpu_kind = 'shared'
 cpus = 1
-memory_mb = 1024
 
-[[mounts]]
-destination = "/data"
-source = "furi_data"
-initial_size = "3gb"
-
-[[files]]
-guest_path = "/home/node/.furikake/config/configuration.json"
-local_path = "configuration.json"
+# If you need persistent storage, add a volume section like this:
+# [[mounts]]
+#   source = "data"
+#   destination = "/data"
+#   initial_size = "5gb"
