@@ -46,9 +46,13 @@ RUN mkdir -p /home/node/.local/bin && \
 # Add local bin to PATH
 ENV PATH="/home/node/.local/bin:$PATH"
 
+# Set environment variables for HTTP server
+ENV PORT=9339
+ENV EXPOSE_SUDO=true
+
 # Expose port (http & aggregator sse)
 EXPOSE 9339
 EXPOSE 9338
 
-# Start Furikake HTTP server
-CMD ["furi", "http", "start", "--no-pm2", "-p", "9339", "--sudo"]
+# Start Furikake HTTP server without PM2 (Fly.io handles process management)
+CMD ["bun", "/home/node/.furikake/app/http/server/routes.ts"]
