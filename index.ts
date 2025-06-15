@@ -63,11 +63,11 @@ program
   .addHelpText(
     "before",
     `\x1b[2m🍃 Furikake
-CLI & API for MCP management and execution
+CLI & API for MCP management
 
 https://furi.so
 https://github.com/ashwwwin/furi
-https://discord.com/invite/B8vAfRkdXS\n\x1b[0m`,
+https://discord.com/invite/B8vAfRkdXS\n\x1b[0m`
   )
   .showHelpAfterError()
   .showSuggestionAfterError();
@@ -130,13 +130,13 @@ program
   .argument("<mcpName>", "MCP name")
   .option(
     "-e, --env <json>",
-    'Environment variables as JSON string: \'{"key":"value"}\'',
+    'Environment variables as JSON string: \'{"key":"value"}\''
   )
   .option("-j, --json", "JSON output")
   .action((mcpName, options) => {
     if (options.json) {
       jsonifyResponse(() =>
-        startMCPResponse(`${mcpName}/start`, options.env, true),
+        startMCPResponse(`${mcpName}/start`, options.env, true)
       );
     } else {
       startMCP(mcpName, options.env);
@@ -176,7 +176,7 @@ program
   .option(
     "-l, --lines <number>",
     "Number of log lines to show (for single MCP)",
-    "15",
+    "15"
   )
   .option("-j, --json", "JSON output")
   .action((mcpName, options) => {
@@ -187,10 +187,8 @@ program
         jsonifyResponse(() =>
           singleStatusResponse(
             `${mcpName}/status`,
-            new URL(
-              `http://localhost/${mcpName}/status?lines=${options.lines}`,
-            ),
-          ),
+            new URL(`http://localhost/${mcpName}/status?lines=${options.lines}`)
+          )
         );
       }
     } else {
@@ -207,7 +205,7 @@ program
   .action((currentName, newName, options) => {
     if (options.json) {
       jsonifyResponse(() =>
-        renameMCPResponse(`${currentName}/rename`, undefined, newName),
+        renameMCPResponse(`${currentName}/rename`, undefined, newName)
       );
     } else {
       renameMCP(currentName, newName);
@@ -229,7 +227,7 @@ program
         jsonifyResponse(() => singleToolsResponse(`${mcpName}/tools`)).then(
           () => {
             process.exit(0);
-          },
+          }
         );
       }
     } else {
@@ -247,7 +245,7 @@ program
   .action((mcpName, toolName, data, options) => {
     if (options.json) {
       jsonifyResponse(() =>
-        callResponse(`${mcpName}/call/${toolName}`, data),
+        callResponse(`${mcpName}/call/${toolName}`, data)
       ).then(() => {
         process.exit(0);
       });
@@ -268,11 +266,11 @@ program
         JSON.stringify({
           success: true,
           furikakePath: getBasePath(),
-        }),
+        })
       );
     } else {
       console.log(
-        `Furikake is stored in: \n     \x1b[2m${getBasePath()}\x1b[0m`,
+        `Furikake is stored in: \n     \x1b[2m${getBasePath()}\x1b[0m`
       );
     }
   });
@@ -309,7 +307,7 @@ httpCommand
 httpCommand
   .command("restart")
   .description(
-    "Restart the running HTTP API server (preserves --sudo and port settings)",
+    "Restart the running HTTP API server (preserves --sudo and port settings)"
   )
   .option("-j, --json", "JSON output")
   .action(async () => {
@@ -324,7 +322,7 @@ httpCommand
   .action(async (options) => {
     if (options.json) {
       jsonifyResponse(() =>
-        httpStatusResponse(undefined, parseInt(options.lines, 10)),
+        httpStatusResponse(undefined, parseInt(options.lines, 10))
       );
     } else {
       const lines = parseInt(options.lines, 10);
@@ -337,7 +335,7 @@ const metaCommand = new Command("meta").description("MCP Aggregator");
 metaCommand
   .command("start")
   .description(
-    "Starts the MCP aggregation server (aggregator uses SSE for CLI access, stdio for MCP connections)",
+    "Starts the MCP aggregation server (aggregator uses SSE for CLI access, stdio for MCP connections)"
   )
   .option("-p, --port <port>", "Port number for SSE transport")
   .option("-j, --json", "JSON output")
@@ -405,7 +403,9 @@ program.addCommand(metaCommand);
 
 program
   .command("connect")
-  .description("Start aggregator server in stdio mode for direct MCP client connections")
+  .description(
+    "Start aggregator server in stdio mode for direct MCP client connections"
+  )
   .action(async () => {
     await connectMCPAggregatorServer();
   });
