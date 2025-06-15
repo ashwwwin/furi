@@ -6,3 +6,4 @@ install.sh
 ./tests
 furikake.zip
 furikake.tar.gz
+fly.toml
