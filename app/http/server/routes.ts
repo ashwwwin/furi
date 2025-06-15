@@ -1,5 +1,6 @@
 #!/usr/bin/env bun
 
+import type { Server } from "bun";
 import { callResponse } from "./endpoints/[mcpName]/call";
 import { removeResponse } from "./endpoints/[mcpName]/remove";
 import { singleToolsResponse } from "./endpoints/[mcpName]/tools";
@@ -43,7 +44,7 @@ export function startHttpRoutes(
 
   const server = Bun.serve({
     port: port,
-    async fetch(req: Request, server: any) {
+    async fetch(req: Request, server: Server) {
       const url = new URL(req.url);
 
       if (url.pathname === "/") {
@@ -108,7 +109,8 @@ export function startHttpRoutes(
       if (url.pathname.startsWith("/add/")) {
         // Set longer timeout for installs (60s)
         server.timeout(req, 60);
-        return addResponse(url.pathname);
+
+        return await addResponse(url.pathname);
       }
 
       // eg. /mcpName/remove
