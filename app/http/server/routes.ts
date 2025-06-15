@@ -43,7 +43,7 @@ export function startHttpRoutes(
 
   const server = Bun.serve({
     port: port,
-    async fetch(req) {
+    async fetch(req: Request, server: any) {
       const url = new URL(req.url);
 
       if (url.pathname === "/") {
@@ -106,6 +106,8 @@ export function startHttpRoutes(
       // eg. /add/author/repo
       // Installs a new MCP from a github repo
       if (url.pathname.startsWith("/add/")) {
+        // Set longer timeout for installs (60s)
+        server.timeout(req, 60);
         return addResponse(url.pathname);
       }
 
