@@ -51,4 +51,4 @@ EXPOSE 9339
 EXPOSE 9338
 
 # Start Furikake HTTP server
-CMD ["furi", "http", "start", "-p", "9339", "--sudo"]
+CMD ["furi", "http", "start", "-p", "9339", "--sudo", "--no-pm2"]

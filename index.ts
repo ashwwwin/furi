@@ -283,6 +283,7 @@ httpCommand
   .option("-p, --port <port>", "Port number")
   .option("--sudo", "Expose sudo routes", false)
   .option("-j, --json", "JSON output")
+  .option("--no-pm2", "Do not use PM2 to start the server")
   .action(async (options) => {
     let port: number;
 
@@ -293,7 +294,7 @@ httpCommand
       port = getHttpPort();
     }
 
-    await startHttpServer(port, options.sudo);
+    await startHttpServer(port, options.sudo, options.pm2 === false);
   });
 
 httpCommand

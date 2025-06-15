@@ -15,149 +15,153 @@ import { envResponse } from "./endpoints/[mcpName]/env";
 import { httpStatusResponse } from "./endpoints/http/status";
 import { renameMCPResponse } from "./endpoints/[mcpName]/rename";
 
-const PORT = parseInt(process.env.PORT || "9339");
+export function startHttpRoutes(
+  port: number,
+  exposeSudoRoutes: boolean = false
+) {
+  // TODO: Improve error messages in the endpoints (MCP not found is vague)
+  // (All throughout the endpoints directory)
 
-console.log(`Starting Furi HTTP API server on port ${PORT}...`);
+  // These are the PUBLIC routes:
+  // /list (get a list of all online MCPs)
+  // /tools (get a list of all available tools from all online MCPs)
+  // /<mcpName>/call/<toolName> (post as a JSON body)
+  // /<mcpName>/tools (get a list of tools for an MCP)
 
-// TODO: Improve error messages in the endpoints (MCP not found is vague)
-// (All throughout the endpoints directory)
+  // These are the SUDO routes:
+  // /add/<author>/<repo> (install a new MCP from a github repo)
+  // /<mcpName>/remove (delete an MCP by <mcpName>)
+  // /status (get the status of ALL MCPs)
+  // /<mcpName>/status?lines=<number> (get the status + logs of an MCP)
+  // /<mcpName>/stop (stop an MCP)
+  // /<mcpName>/restart (restart an MCP)
+  // TODO: /<mcpName>/env (get the environment variables for an MCP)
 
-const exposeSudoRoutes = process.env.EXPOSE_SUDO === "true";
+  // /<mcpName>/start?env=JSON.stringify({}) (start an MCP)
+  // These are all JSON responses.
 
-console.log(`Admin routes ${exposeSudoRoutes ? "enabled" : "disabled"}`);
+  const server = Bun.serve({
+    port: port,
+    async fetch(req) {
+      const url = new URL(req.url);
 
-// These are the PUBLIC routes:
-// /list (get a list of all online MCPs)
-// /tools (get a list of all available tools from all online MCPs)
-// /<mcpName>/call/<toolName> (post as a JSON body)
-// /<mcpName>/tools (get a list of tools for an MCP)
+      if (url.pathname === "/") {
+        return new Response(`Furi API Server is running on port ${port}`);
+      }
 
-// These are the SUDO routes:
-// /add/<author>/<repo> (install a new MCP from a github repo)
-// /<mcpName>/remove (delete an MCP by <mcpName>)
-// /status (get the status of ALL MCPs)
-// /<mcpName>/status?lines=<number> (get the status + logs of an MCP)
-// /<mcpName>/stop (stop an MCP)
-// /<mcpName>/restart (restart an MCP)
-// TODO: /<mcpName>/env (get the environment variables for an MCP)
+      // eg. /list
+      // Returns a list of all installed MCPs (or only running if ?all=true is not set)
+      if (url.pathname === "/list") {
+        const showAll = url.searchParams.get("all") === "true";
+        return listResponse(showAll);
+      }
 
-// /<mcpName>/start?env=JSON.stringify({}) (start an MCP)
-// These are all JSON responses.
+      // eg. /tools
+      // Returns a list of all available tools from all online MCPs
+      if (url.pathname == "/tools") {
+        return toolsResponse();
+      }
 
-const server = Bun.serve({
-  port: PORT,
-  async fetch(req) {
-    const url = new URL(req.url);
+      // eg. /mcpName/tools
+      // Returns a list of tools for an MCP
+      if (url.pathname.endsWith("/tools")) {
+        return singleToolsResponse(url.pathname);
+      }
 
-    if (url.pathname === "/") {
-      return new Response(`Furi API Server is running on port ${PORT}`);
-    }
+      // eg. /mcpName/call/toolName
+      // Calls a tool on an MCP and returns the result
+      if (url.pathname.includes("/call/")) {
+        return callResponse(url.pathname, await req.json());
+      }
 
-    // eg. /list
-    // Returns a list of all installed MCPs (or only running if ?all=true is not set)
-    if (url.pathname === "/list") {
-      const showAll = url.searchParams.get("all") === "true";
-      return listResponse(showAll);
-    }
+      // eg. /isSudo
+      // Returns true if the server is running in sudo mode
+      if (url.pathname == "/isSudo") {
+        return new Response(
+          JSON.stringify({ success: true, isSudo: exposeSudoRoutes })
+        );
+      }
 
-    // eg. /tools
-    // Returns a list of all available tools from all online MCPs
-    if (url.pathname == "/tools") {
-      return toolsResponse();
-    }
+      if (!exposeSudoRoutes) {
+        return new Response(
+          JSON.stringify({ success: false, message: "Not Found" })
+        );
+      }
 
-    // eg. /mcpName/tools
-    // Returns a list of tools for an MCP
-    if (url.pathname.endsWith("/tools")) {
-      return singleToolsResponse(url.pathname);
-    }
+      ////////////////////////////////////////////////////////////////////////////
+      // Pages after this point are only accessible if exposeSudoRoutes is true //
+      ////////////////////////////////////////////////////////////////////////////
 
-    // eg. /mcpName/call/toolName
-    // Calls a tool on an MCP and returns the result
-    if (url.pathname.includes("/call/")) {
-      return callResponse(url.pathname, await req.json());
-    }
+      // eg. /status
+      // Returns a list of all MCPs with details (running and stopped)
+      if (url.pathname === "/status") {
+        return statusResponse();
+      }
 
-    // eg. /isSudo
-    // Returns true if the server is running in sudo mode
-    if (url.pathname == "/isSudo") {
-      return new Response(
-        JSON.stringify({ success: true, isSudo: exposeSudoRoutes })
-      );
-    }
+      if (url.pathname.endsWith("/rename")) {
+        return renameMCPResponse(url.pathname, url);
+      }
 
-    if (!exposeSudoRoutes) {
+      // eg. /add/author/repo
+      // Installs a new MCP from a github repo
+      if (url.pathname.startsWith("/add/")) {
+        return addResponse(url.pathname);
+      }
+
+      // eg. /mcpName/remove
+      // Removes an MCP by name
+      if (url.pathname.endsWith("/remove")) {
+        return removeResponse(url.pathname);
+      }
+
+      // eg. /mcpName/env
+      // Returns the environment variables for an MCP
+      if (url.pathname.endsWith("/env")) {
+        return envResponse(url.pathname);
+      }
+
+      // eg. /mcpName/status (?lines=10, get the status + logs of an MCP)
+      // Returns status and logs for the MCP
+      if (url.pathname.endsWith("/status")) {
+        return singleStatusResponse(url.pathname, url);
+      }
+
+      // eg. /mcpName/stop
+      // Stops an MCP by name
+      if (url.pathname.endsWith("/stop")) {
+        return stopResponse(url.pathname);
+      }
+
+      // eg. /mcpName/restart
+      // Restarts an MCP by name
+      if (url.pathname.endsWith("/restart")) {
+        return restartResponse(url.pathname);
+      }
+
+      // eg. /mcpName/start
+      // Starts an MCP by name
+      if (url.pathname.endsWith("/start")) {
+        return startMCPResponse(url.pathname, req);
+      }
+
+      // eg. /http/status
+      // Returns the status of the HTTP server
+      if (url.pathname.endsWith("/http/status")) {
+        return httpStatusResponse(url);
+      }
+
       return new Response(
         JSON.stringify({ success: false, message: "Not Found" })
       );
-    }
+    },
+  });
 
-    ////////////////////////////////////////////////////////////////////////////
-    // Pages after this point are only accessible if exposeSudoRoutes is true //
-    ////////////////////////////////////////////////////////////////////////////
+  return server;
+}
 
-    // eg. /status
-    // Returns a list of all MCPs with details (running and stopped)
-    if (url.pathname === "/status") {
-      return statusResponse();
-    }
-
-    if (url.pathname.endsWith("/rename")) {
-      return renameMCPResponse(url.pathname, url);
-    }
-
-    // eg. /add/author/repo
-    // Installs a new MCP from a github repo
-    if (url.pathname.startsWith("/add/")) {
-      return addResponse(url.pathname);
-    }
-
-    // eg. /mcpName/remove
-    // Removes an MCP by name
-    if (url.pathname.endsWith("/remove")) {
-      return removeResponse(url.pathname);
-    }
-
-    // eg. /mcpName/env
-    // Returns the environment variables for an MCP
-    if (url.pathname.endsWith("/env")) {
-      return envResponse(url.pathname);
-    }
-
-    // eg. /mcpName/status (?lines=10, get the status + logs of an MCP)
-    // Returns status and logs for the MCP
-    if (url.pathname.endsWith("/status")) {
-      return singleStatusResponse(url.pathname, url);
-    }
-
-    // eg. /mcpName/stop
-    // Stops an MCP by name
-    if (url.pathname.endsWith("/stop")) {
-      return stopResponse(url.pathname);
-    }
-
-    // eg. /mcpName/restart
-    // Restarts an MCP by name
-    if (url.pathname.endsWith("/restart")) {
-      return restartResponse(url.pathname);
-    }
-
-    // eg. /mcpName/start
-    // Starts an MCP by name
-    if (url.pathname.endsWith("/start")) {
-      return startMCPResponse(url.pathname, req);
-    }
-
-    // eg. /http/status
-    // Returns the status of the HTTP server
-    if (url.pathname.endsWith("/http/status")) {
-      return httpStatusResponse(url);
-    }
-
-    return new Response(
-      JSON.stringify({ success: false, message: "Not Found" })
-    );
-  },
-});
-
-console.log(`Furi HTTP API server is running at http://localhost:${PORT}`);
+// When run directly (not imported), start the server with environment variables
+if (import.meta.main) {
+  const PORT = parseInt(process.env.PORT || "9339");
+  const exposeSudoRoutes = process.env.EXPOSE_SUDO === "true";
+  startHttpRoutes(PORT, exposeSudoRoutes);
+}

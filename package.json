@@ -1,7 +1,7 @@
 {
   "name": "furi-cli",
   "module": "index.ts",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "type": "module",
   "private": true,
   "scripts": {

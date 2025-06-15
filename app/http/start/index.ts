@@ -3,7 +3,11 @@ import { createServer, setPort, isServerRunning } from "../server/server";
 import { createSpinner } from "nanospinner";
 import { getHttpPort, saveHttpPort } from "@/helpers/config";
 
-export const startHttpServer = async (_port: number, exposeSudo = false) => {
+export const startHttpServer = async (
+  _port: number,
+  exposeSudo = false,
+  noPm2 = false
+) => {
   const spinner = createSpinner("Starting HTTP API server").start();
 
   try {
@@ -46,7 +50,7 @@ export const startHttpServer = async (_port: number, exposeSudo = false) => {
       return;
     }
 
-    await createServer(exposeSudo);
+    await createServer(exposeSudo, noPm2);
 
     spinner.success({ text: "HTTP API server started" });
     console.log(

@@ -53,7 +53,17 @@ export const getServer = async () => {
   });
 };
 
-export const createServer = async (exposeSudo = false): Promise<any> => {
+export const createServer = async (
+  exposeSudo = false,
+  noPm2 = false
+): Promise<any> => {
+  if (noPm2) {
+    // Import and start the server directly in the same process
+    const { startHttpRoutes } = await import("./routes");
+    return startHttpRoutes(port, exposeSudo);
+  }
+
+  // Only check for running server when using PM2
   const isRunning = await isServerRunning();
 
   // If a server is already running, stop it first
