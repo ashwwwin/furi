@@ -14,6 +14,7 @@ import { startMCPResponse } from "./endpoints/[mcpName]/start";
 import { envResponse } from "./endpoints/[mcpName]/env";
 import { httpStatusResponse } from "./endpoints/http/status";
 import { renameMCPResponse } from "./endpoints/[mcpName]/rename";
+import { whereResponse } from "./endpoints/where/where";
 
 export function startHttpRoutes(
   port: number,
@@ -148,6 +149,12 @@ export function startHttpRoutes(
       // Returns the status of the HTTP server
       if (url.pathname.endsWith("/http/status")) {
         return httpStatusResponse(url);
+      }
+
+      // eg. /where
+      // Returns the path to the .furikake directory
+      if (url.pathname.endsWith("/where")) {
+        return whereResponse();
       }
 
       return new Response(
