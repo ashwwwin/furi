@@ -47,6 +47,21 @@ export function startHttpRoutes(
     async fetch(req: Request, server: Server) {
       const url = new URL(req.url);
 
+      if (
+        process.env.HTTP_AUTH_TOKEN &&
+        process.env.HTTP_AUTH_TOKEN !== req.headers.get("Authorization")
+      ) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: "Unauthorized, please pass a valid Authorization header",
+          }),
+          {
+            status: 401,
+          }
+        );
+      }
+
       if (url.pathname === "/") {
         return new Response(`Furi API Server is running on port ${port}`);
       }

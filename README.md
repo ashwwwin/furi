@@ -233,6 +233,18 @@ furi http stop
 
 The Furikake HTTP API is divided into **public routes** and **sudo routes**. Public routes are accessible by default, while sudo routes must be explicitly enabled. With sudo routes, you can actively manage packages and instances via the HTTP API.
 
+If you want to secure your API, you can set the `HTTP_AUTH_TOKEN` environment variable.
+
+```bash
+export HTTP_AUTH_TOKEN=your-secret-token
+```
+
+or in your `.env` file:
+
+```bash
+HTTP_AUTH_TOKEN=your-secret-token
+```
+
 #### API Response Format
 
 All API endpoints follow a standardized JSON response format:
