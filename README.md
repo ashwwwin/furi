@@ -2,7 +2,7 @@
 
 # 🍃 Furikake (or furi)
 
-Furikake is an easy to use, CLI & API for MCP management.
+furi is an easy to use, CLI & API for MCP management.
 
 - Download MCP servers [from GitHub]
 - Smithery.yaml detection (or auto detects/handles execution)
@@ -18,7 +18,7 @@ Furikake is an easy to use, CLI & API for MCP management.
 
 ## Installation (macOS/Linux)
 
-To install Furikake, you can use the following command:
+To install Furi, you can use the following command:
 
 ```bash
 curl -fsSL https://furi.so/install | bash
@@ -32,9 +32,9 @@ furi
 
 _Furikake uses Bun under the hood, the install script will install Bun if it is not already installed._
 
-### Upgrade Furikake
+### Upgrade Furi
 
-To upgrade Furikake to the latest version, run:
+To upgrade Furi to the latest version, run:
 
 ```bash
 furi upgrade
