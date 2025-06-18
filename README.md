@@ -2,12 +2,12 @@
 
 # 🍃 Furikake (or furi)
 
-Furikake is an easy to use, local CLI & API for MCP management and execution.
+Furikake is an easy to use, CLI & API for MCP management.
 
 - Download MCP servers [from GitHub]
 - Smithery.yaml detection (or auto detects/handles execution)
 - Fully featured CLI [nanospinners, readability]
-- Typescript & Javascript MCP's built in are supported
+- Typescript & Javascript MCP's are supported
 - Python based MCP's are a key roadmap item (and will be supported)
 - HTTP API Routes (uses Bun http, stdio to http, clear and standard routes)
 - Customizable port and visibility of sudo routes
