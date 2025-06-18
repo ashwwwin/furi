@@ -473,7 +473,7 @@ async function updateTools() {
     try {
       if (transportConfig) {
         if (!isStdioMode()) {
-          console.log(`Restarting server with port ${port || "unknown"}`);
+          console.log(`Restarting server`);
         }
         server.start({
           ...transportConfig,
