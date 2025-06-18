@@ -49,6 +49,7 @@ ENV PATH="/home/node/.local/bin:$PATH"
 # Set environment variables for HTTP server
 ENV PORT=9339
 ENV EXPOSE_SUDO=true
+ENV BASE_PATH=/home/node/.furikake
 
 # Expose port (http & aggregator sse)
 EXPOSE 9339
