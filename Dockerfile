@@ -48,5 +48,9 @@ ENV BASE_PATH=/home/node/.furikake
 EXPOSE 9339
 EXPOSE 9338
 
-# Start Furikake HTTP server without PM2 (Fly.io handles process management)
-CMD ["bun", "/home/node/.furikake/app/http/server/routes.ts"]
+# Create a startup script that ensures environment variables are loaded
+RUN echo '#!/bin/bash\nset -e\necho "Environment variables at startup:"\nenv | grep -E "(HTTP_AUTH_TOKEN|PORT|EXPOSE_SUDO)" || echo "No matching env vars found"\nexec "$@"' > /home/node/start.sh && \
+    chmod +x /home/node/start.sh
+
+# Start Furikake HTTP server with environment variable debugging
+CMD ["/home/node/start.sh", "bun", "/home/node/.furikake/app/http/server/routes.ts"]
