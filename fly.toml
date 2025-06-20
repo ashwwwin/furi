@@ -4,7 +4,7 @@
 #
 
 app = 'furi'
-primary_region = 'sjc'
+primary_region = 'iad'
 
 [build]
 dockerfile = "Dockerfile"

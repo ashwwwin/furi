@@ -48,5 +48,4 @@ ENV BASE_PATH=/home/node/.furikake
 EXPOSE 9339
 EXPOSE 9338
 
-# Start Furikake HTTP server without PM2 (Fly.io handles process management)
 CMD ["bun", "/home/node/.furikake/app/http/server/routes.ts"]
