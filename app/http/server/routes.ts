@@ -48,6 +48,7 @@ export function startHttpRoutes(
       const url = new URL(req.url);
 
       console.log("Required HTTP AUTH:", process.env.HTTP_AUTH_TOKEN);
+
       if (
         process.env.HTTP_AUTH_TOKEN &&
         process.env.HTTP_AUTH_TOKEN !== req.headers.get("Authorization")
@@ -190,5 +191,6 @@ export function startHttpRoutes(
 if (import.meta.main) {
   const PORT = parseInt(process.env.PORT || "9339");
   const exposeSudoRoutes = process.env.EXPOSE_SUDO === "true";
+  console.log("HTTP AUTH TOKEN:", process.env.HTTP_AUTH_TOKEN);
   startHttpRoutes(PORT, exposeSudoRoutes);
 }
