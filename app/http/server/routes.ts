@@ -47,6 +47,7 @@ export function startHttpRoutes(
     async fetch(req: Request, server: Server) {
       const url = new URL(req.url);
 
+      console.log("Required HTTP AUTH:", process.env.HTTP_AUTH_TOKEN);
       if (
         process.env.HTTP_AUTH_TOKEN &&
         process.env.HTTP_AUTH_TOKEN !== req.headers.get("Authorization")
