@@ -34,17 +34,10 @@ RUN git clone https://github.com/ashwwwin/furi.git .furikake && \
     bun install
 
 # Create necessary directories for furi package management
-RUN mkdir -p /home/node/.furikake/installed && \
-    mkdir -p /home/node/.furikake/config && \
-    mkdir -p /home/node/.furikake/cache
+RUN mkdir -p /home/node/.furikake/installed
 
-# Create furi executable script
-RUN mkdir -p /home/node/.local/bin && \
-    echo '#!/usr/bin/env bash\nexec bun /home/node/.furikake/index.ts "$@"' > /home/node/.local/bin/furi && \
-    chmod +x /home/node/.local/bin/furi
-
-# Add local bin to PATH
-ENV PATH="/home/node/.local/bin:$PATH"
+# Create configuration.json
+RUN echo '{"installed": {}}' > /home/node/.furikake/configuration.json
 
 # Set environment variables for HTTP server
 ENV PORT=9339
