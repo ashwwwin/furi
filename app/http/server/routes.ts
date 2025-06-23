@@ -105,7 +105,7 @@ export function startHttpRoutes(
         return new Response(
           JSON.stringify({
             success: false,
-            message: "Not Found or not authorized",
+            message: "Not found or unauthorized",
           })
         );
       }
