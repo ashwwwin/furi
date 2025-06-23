@@ -22,8 +22,7 @@ memory = '1gb'
 cpu_kind = 'shared'
 cpus = 1
 
-# If you need persistent storage, add a volume section like this:
-# [[mounts]]
-#   source = "data"
-#   destination = "/data"
-#   initial_size = "5gb"
+[[mounts]]
+source = "data"
+destination = "/data"
+initial_size = "5gb"
