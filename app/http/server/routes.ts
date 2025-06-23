@@ -103,7 +103,10 @@ export function startHttpRoutes(
 
       if (!exposeSudoRoutes) {
         return new Response(
-          JSON.stringify({ success: false, message: "Not Found" })
+          JSON.stringify({
+            success: false,
+            message: "Not Found or not authorized",
+          })
         );
       }
 
@@ -179,7 +182,7 @@ export function startHttpRoutes(
       }
 
       return new Response(
-        JSON.stringify({ success: false, message: "Not Found" })
+        JSON.stringify({ success: false, message: "Not found" })
       );
     },
   });
