@@ -3,8 +3,8 @@ import { existsSync } from "node:fs";
 import { stopMCPCore } from "@/mcp/stop/actions/stopMCP";
 import {
   getPackagePath,
-  resolveFromBase,
   getInstalledPath,
+  resolveFromUserData,
 } from "@/helpers/paths";
 
 type DeletePackageResult = {
@@ -16,7 +16,7 @@ export const deletePackage = async (
   mcpName: string
 ): Promise<DeletePackageResult> => {
   try {
-    const configPath = resolveFromBase("configuration.json");
+    const configPath = resolveFromUserData("configuration.json");
     const configFile = Bun.file(configPath);
     const configExists = await configFile.exists();
     let config: Record<

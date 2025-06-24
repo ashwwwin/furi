@@ -24,7 +24,7 @@ import {
   connectMCPAggregatorServer,
 } from "@/aggregator";
 import { upgradeFuri } from "@/upgrade";
-import { getBasePath } from "@/helpers/paths";
+import { getBasePath, getUserDataPath } from "@/helpers/paths";
 import {
   getHttpPort,
   saveHttpPort,
@@ -258,20 +258,36 @@ program
 
 program
   .command("where")
-  .description("Show the path to the .furikake directory")
+  .description("Show Furikake installation and data directory paths")
   .option("-j, --json", "Output the path in JSON format")
+  .option("-d, --data", "Output the path to the user data directory")
   .action((options) => {
     if (options.json) {
-      console.log(
-        JSON.stringify({
-          success: true,
-          furikakePath: getBasePath(),
-        })
-      );
+      if (options.data) {
+        console.log(
+          JSON.stringify({
+            success: true,
+            furikakePath: getUserDataPath(),
+          })
+        );
+      } else {
+        console.log(
+          JSON.stringify({
+            success: true,
+            furikakePath: getBasePath(),
+          })
+        );
+      }
     } else {
-      console.log(
-        `Furikake is stored in: \n     \x1b[2m${getBasePath()}\x1b[0m`
-      );
+      if (options.data) {
+        console.log(
+          `Furikake user data is stored in: \n     \x1b[2m${getUserDataPath()}\x1b[0m`
+        );
+      } else {
+        console.log(
+          `Furikake app is installed in: \n     \x1b[2m${getBasePath()}\x1b[0m`
+        );
+      }
     }
   });
 

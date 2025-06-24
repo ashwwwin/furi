@@ -1,6 +1,10 @@
 import { readFileSync } from "fs";
 import pm2 from "pm2";
-import { resolveFromBase, getBasePath } from "@/helpers/paths";
+import {
+  resolveFromBase,
+  getBasePath,
+  resolveFromUserData,
+} from "@/helpers/paths";
 import { isAbsolute } from "path";
 import { readConfig, getSocketPath } from "./config";
 
@@ -316,7 +320,7 @@ export const getConnectionInfo = async (
 }> => {
   const socketPath =
     getSocketPath(mcpName) ||
-    resolveFromBase(`/transport/furi_${mcpName.replace("/", "-")}.sock`);
+    resolveFromUserData(`/transport/furi_${mcpName.replace("/", "-")}.sock`);
 
   try {
     await connectToPm2();
@@ -425,7 +429,7 @@ export const getPackageConfig = (
   cmd: string;
   cmdArgs: string[];
 } => {
-  const configPath = resolveFromBase("configuration.json");
+  const configPath = resolveFromUserData("configuration.json");
   const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
   const mcpConfig =
@@ -442,7 +446,7 @@ export const getPackageConfig = (
       // console.warn(
       //   `[${mcpName}] mcpConfig.source was not an absolute path. Resolving from base. Source: ${cwdAbsolute}`
       // );
-      cwdAbsolute = resolveFromBase(cwdAbsolute);
+      cwdAbsolute = resolveFromUserData(cwdAbsolute);
     }
   } else {
     // console.warn(
@@ -452,9 +456,9 @@ export const getPackageConfig = (
     const owner = parts[0];
     const repo = parts[1];
     if (owner && repo) {
-      cwdAbsolute = resolveFromBase("installed", owner, repo);
+      cwdAbsolute = resolveFromUserData("installed", owner, repo);
     } else {
-      cwdAbsolute = resolveFromBase("installed", mcpName);
+      cwdAbsolute = resolveFromUserData("installed", mcpName);
     }
   }
 

@@ -1,4 +1,4 @@
-import { resolveFromBase } from "@/helpers/paths";
+import { resolveFromBase, resolveFromUserData } from "@/helpers/paths";
 
 type EnvironmentVariablesOutput = {
   variables: string[];
@@ -493,7 +493,7 @@ async function scanFileForEnvVars(
 }
 
 export const getEnv = async (mcpName: string) => {
-  const configPath = resolveFromBase("configuration.json");
+  const configPath = resolveFromUserData("configuration.json");
   const config = Bun.file(configPath);
   const configJson = await config.json();
 

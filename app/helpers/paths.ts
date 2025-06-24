@@ -16,11 +16,21 @@ export const getBasePath = (): string => {
   return normalize(resolve(basePath));
 };
 
+export const getUserDataPath = (): string => {
+  let userPath = process.env.USERDATA_PATH;
+
+  if (!userPath) {
+    userPath = join(homedir(), ".furikake");
+  }
+
+  return normalize(resolve(userPath));
+};
+
 /**
  * Get the path to the installed packages directory
  */
 export const getInstalledPath = (): string => {
-  return join(getBasePath(), "installed");
+  return join(getUserDataPath(), "installed");
 };
 
 /**
@@ -38,4 +48,11 @@ export const getPackagePath = (
  */
 export const resolveFromBase = (...paths: string[]): string => {
   return join(getBasePath(), ...paths);
+};
+
+/**
+ * Resolve any path relative to the user data path (.furikake directory)
+ */
+export const resolveFromUserData = (...paths: string[]): string => {
+  return join(getUserDataPath(), ...paths);
 };

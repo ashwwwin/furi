@@ -8,7 +8,11 @@ type DetectRepoResult = {
 
 import { join } from "path";
 import { existsSync } from "node:fs";
-import { getPackagePath, resolveFromBase } from "@/helpers/paths";
+import {
+  getPackagePath,
+  resolveFromBase,
+  resolveFromUserData,
+} from "@/helpers/paths";
 
 export const validatePackage = async (
   mcpName: string
@@ -42,7 +46,7 @@ export const validatePackage = async (
   result.isInstalled = existsSync(packagePath);
 
   // Get the alias from the configuration file
-  const configPath = resolveFromBase("configuration.json");
+  const configPath = resolveFromUserData("configuration.json");
   const configFile = Bun.file(configPath);
   const configExists = await configFile.exists();
   if (configExists) {

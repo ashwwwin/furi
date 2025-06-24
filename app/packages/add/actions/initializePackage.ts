@@ -1,6 +1,10 @@
 import { join, relative, dirname } from "path";
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
-import { getPackagePath, resolveFromBase } from "@/helpers/paths";
+import {
+  getPackagePath,
+  resolveFromBase,
+  resolveFromUserData,
+} from "@/helpers/paths";
 import yaml from "js-yaml";
 type PackageOutput = {
   success: boolean;
@@ -45,7 +49,7 @@ async function createTransportWrapper(
       packagePath,
       isESM ? "furi-transport-wrapper.mjs" : "furi-transport-wrapper.cjs"
     );
-    const socketPath = resolveFromBase(
+    const socketPath = resolveFromUserData(
       `/transport/furi_${mcpName.replace("/", "-")}.sock`
     );
 
@@ -730,7 +734,7 @@ process.on('SIGTERM', () => {
     }
 
     // Update configuration.json
-    const configPath = resolveFromBase("configuration.json");
+    const configPath = resolveFromUserData("configuration.json");
     const configExists = existsSync(configPath);
     let config: Record<string, any> = {};
     let configReadError = false;
@@ -770,7 +774,7 @@ process.on('SIGTERM', () => {
         ? wrapperCreated.runCommand!
         : finalRunCommand;
 
-      const socketPath = resolveFromBase(
+      const socketPath = resolveFromUserData(
         `/transport/furi_${mcpName.replace("/", "-")}.sock`
       );
 

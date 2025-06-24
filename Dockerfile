@@ -33,16 +33,17 @@ RUN git clone https://github.com/ashwwwin/furi.git .furikake && \
     cd .furikake && \
     bun install
 
-# Create necessary directories for furi package management
-RUN mkdir -p /home/node/.furikake/installed
+# Create necessary directories for persistent user data (will be overridden by mount in production)
+# RUN mkdir -p /data/installed
 
 # Create configuration.json
-RUN echo '{"installed": {}}' > /home/node/.furikake/configuration.json
+# RUN echo '{"installed": {}}' > /data/configuration.json
 
 # Set environment variables for HTTP server
 ENV PORT=9339
 ENV EXPOSE_SUDO=true
 ENV BASE_PATH=/home/node/.furikake
+ENV USERDATA_PATH=/data
 
 # Expose port (http & aggregator sse)
 EXPOSE 9339

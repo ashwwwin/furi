@@ -4,7 +4,7 @@ import { scanEnvVars } from "../env/actions/scanEnvVars";
 import readline from "readline";
 import { readFileSync, writeFileSync } from "fs";
 import chalk from "chalk";
-import { resolveFromBase } from "@/helpers/paths";
+import { resolveFromBase, resolveFromUserData } from "@/helpers/paths";
 
 export const startMCP = async (
   mcpName: string,
@@ -14,7 +14,7 @@ export const startMCP = async (
   let config: any;
   let initialEnv: Record<string, string> = {};
   let mcpConfig: any;
-  const configPath = resolveFromBase("configuration.json");
+  const configPath = resolveFromUserData("configuration.json");
 
   try {
     config = JSON.parse(readFileSync(configPath, "utf-8"));

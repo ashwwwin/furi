@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync, existsSync } from "fs";
-import { resolveFromBase } from "@/helpers/paths";
+import { resolveFromBase, resolveFromUserData } from "@/helpers/paths";
 
 interface Config {
   http?: {
@@ -16,7 +16,7 @@ interface Config {
  * Read the current configuration from configuration.json
  */
 export const readConfig = (): Config => {
-  const configPath = resolveFromBase("configuration.json");
+  const configPath = resolveFromUserData("configuration.json");
 
   if (!existsSync(configPath)) {
     return {};
@@ -35,7 +35,7 @@ export const readConfig = (): Config => {
  * Write configuration to configuration.json
  */
 export const writeConfig = (config: Config): void => {
-  const configPath = resolveFromBase("configuration.json");
+  const configPath = resolveFromUserData("configuration.json");
 
   try {
     writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
@@ -94,26 +94,26 @@ export const saveAggregatorPort = (port: number): void => {
  */
 export const getSocketPath = (mcpName: string): string | null => {
   const config = readConfig();
-  
+
   // Check if MCP exists in root level
   if (config[mcpName]?.socketPath) {
     return config[mcpName].socketPath;
   }
-  
+
   // Check for transport key (legacy)
   if (config[mcpName]?.transport) {
     return config[mcpName].transport;
   }
-  
+
   // Check if MCP exists in installed section
   if (config.installed?.[mcpName]?.socketPath) {
     return config.installed[mcpName].socketPath;
   }
-  
+
   // Check for transport key in installed section (legacy)
   if (config.installed?.[mcpName]?.transport) {
     return config.installed[mcpName].transport;
   }
-  
+
   return null;
 };

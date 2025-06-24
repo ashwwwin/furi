@@ -1,6 +1,10 @@
 import { readFileSync, writeFileSync } from "fs";
 import pm2 from "pm2";
-import { resolveFromBase, getPackagePath } from "@/helpers/paths";
+import {
+  resolveFromBase,
+  getPackagePath,
+  resolveFromUserData,
+} from "@/helpers/paths";
 import { isAbsolute } from "path";
 
 // Connect to PM2
@@ -35,7 +39,7 @@ export const renamePackage = async (
 ): Promise<{ success: boolean; message: string }> => {
   try {
     // Read the configuration.json file
-    const configPath = resolveFromBase("configuration.json");
+    const configPath = resolveFromUserData("configuration.json");
     let config;
 
     try {
@@ -158,7 +162,7 @@ export const renamePackage = async (
               console.warn(
                 `[${newName}] newMcpConfig.source in rename was not absolute. Resolving from base. Source: ${cwd}`
               );
-              cwd = resolveFromBase(cwd);
+              cwd = resolveFromUserData(cwd);
             }
           } else {
             console.warn(
@@ -170,7 +174,7 @@ export const renamePackage = async (
             if (owner && repo) {
               cwd = getPackagePath(owner, repo);
             } else {
-              cwd = resolveFromBase("installed", newName);
+              cwd = resolveFromUserData("installed", newName);
             }
           }
 

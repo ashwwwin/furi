@@ -1,12 +1,12 @@
 import { readFileSync } from "fs";
 import pm2 from "pm2";
-import { resolveFromBase } from "@/helpers/paths";
+import { resolveFromUserData } from "@/helpers/paths";
 
 export const startMCPCore = async (
-  mcpName: string,
+  mcpName: string
 ): Promise<{ success: boolean; message: string }> => {
   try {
-    const configPath = resolveFromBase("configuration.json");
+    const configPath = resolveFromUserData("configuration.json");
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
 
     // Check both root level and installed section for MCP configuration
@@ -109,7 +109,7 @@ export const startMCPCore = async (
             return;
           }
           resolve();
-        },
+        }
       );
     });
 
