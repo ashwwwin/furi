@@ -33,11 +33,17 @@ RUN git clone https://github.com/ashwwwin/furi.git .furikake && \
     cd .furikake && \
     bun install
 
-# Create necessary directories for persistent user data (will be overridden by mount in production)
-# RUN mkdir -p /data/installed
+# Create /data directory and set permissions for node user
+USER root
+RUN mkdir -p /data/installed /data/transport && \
+    chown -R node:node /data && \
+    chmod -R 755 /data
 
-# Create configuration.json
-# RUN echo '{"installed": {}}' > /data/configuration.json
+# Switch back to node user
+USER node
+
+# Create initial configuration.json if it doesn't exist
+RUN echo '{"installed": {}}' > /data/configuration.json
 
 # Set environment variables for HTTP server
 ENV PORT=9339
@@ -47,6 +53,6 @@ ENV USERDATA_PATH=/data
 
 # Expose port (http & aggregator sse)
 EXPOSE 9339
-EXPOSE 9338
+# EXPOSE 9338
 
 CMD ["bun", "/home/node/.furikake/app/http/server/routes.ts"]

@@ -1,13 +1,10 @@
-# fly.toml app configuration file generated for furi on 2025-06-15T02:15:01Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
 app = 'furi'
 primary_region = 'iad'
 
-[build]
-dockerfile = "Dockerfile"
+[[mounts]]
+source = 'data'
+destination = '/data'
+initial_size = '5gb'
 
 [http_service]
 internal_port = 9339
@@ -21,8 +18,3 @@ processes = ['app']
 memory = '1gb'
 cpu_kind = 'shared'
 cpus = 1
-
-[[mounts]]
-source = "data"
-destination = "/data"
-initial_size = "5gb"
