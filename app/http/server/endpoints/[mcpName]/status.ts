@@ -18,12 +18,26 @@ export const singleStatusResponse = async (pathname: string, url: URL) => {
   const linesParam = url.searchParams.get("lines");
   const lines = linesParam ? parseInt(linesParam, 10) : 5;
 
-  const result = await getProcStatus(mcpName);
+  let result = await getProcStatus(mcpName);
+  if (!result.success) {
+    return new Response(
+      JSON.stringify({ success: false, error: result.message })
+    );
+  }
+
+  // Destructure to exclude the success property
+  const { success, ...resultData } = result;
+
   const logs = await getMCPLogs(mcpName, lines);
+
+  if (!logs.success) {
+    return new Response(JSON.stringify({ success: false, error: logs.error }));
+  }
+
   return new Response(
     JSON.stringify({
       success: true,
-      data: { ...result, logs },
+      data: { ...resultData.data, logs },
     })
   );
 };

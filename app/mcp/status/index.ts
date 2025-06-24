@@ -15,7 +15,7 @@ import pm2 from "pm2";
 const getMCPLogs = async (
   mcpName: string,
   lines: number = 15
-): Promise<{ output: string; error: string }> => {
+): Promise<{ success: boolean; output: string; error: string }> => {
   try {
     const pmName = `furi_${mcpName.replace("/", "-")}`;
 
@@ -44,6 +44,7 @@ const getMCPLogs = async (
 
       if (!processList || processList.length === 0) {
         return {
+          success: false,
           output: `Process ${pmName} not found`,
           error: "",
         };
@@ -80,13 +81,14 @@ const getMCPLogs = async (
         }
       }
 
-      return { output: outputLogs, error: errorLogs };
+      return { success: true, output: outputLogs, error: errorLogs };
     } finally {
       // Always disconnect from PM2
       pm2.disconnect();
     }
   } catch (error) {
     return {
+      success: false,
       output: "",
       error: `Error retrieving logs: ${
         error instanceof Error ? error.message : String(error)
@@ -128,7 +130,11 @@ export const statusMCP = async (
       try {
         const lineCount = parseInt(lines, 10) || 15;
         const logs = await getMCPLogs(result.data.name, lineCount);
-        const pmName = `furi_${result.data.name.replace("/", "-")}`;
+
+        if (!logs.success) {
+          spinner.error(logs.error);
+          return;
+        }
 
         // Display logs in a simpler format similar to PM2 logs
         if (logs.output.trim()) {
