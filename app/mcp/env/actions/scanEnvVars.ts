@@ -208,12 +208,10 @@ async function scanSourceDirectory(
       if (!entry || entry === directory) continue;
 
       try {
-        // Check if it's a directory using stat
-        const statProcess = Bun.spawn(["stat", "-f", "%Sp", entry], {
-          stdout: "pipe",
-        });
-        const statOutput = await new Response(statProcess.stdout).text();
-        const isDir = statOutput.trim().startsWith("d");
+        // Check if it's a directory using Bun's native file API
+        const file = Bun.file(entry);
+        const stats = await file.stat();
+        const isDir = stats.isDirectory();
 
         if (isDir) {
           // Skip common directories to ignore
