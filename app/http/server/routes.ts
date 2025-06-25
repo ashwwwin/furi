@@ -16,6 +16,8 @@ import { envResponse } from "./endpoints/[mcpName]/env";
 import { httpStatusResponse } from "./endpoints/http/status";
 import { renameMCPResponse } from "./endpoints/[mcpName]/rename";
 import { whereResponse } from "./endpoints/where/where";
+import { readConfiguration } from "./endpoints/[mcpName]/config/read";
+import { saveConfiguration } from "./endpoints/[mcpName]/config/save";
 
 export function startHttpRoutes(
   port: number,
@@ -47,8 +49,6 @@ export function startHttpRoutes(
     async fetch(req: Request, server: Server) {
       const url = new URL(req.url);
 
-      // console.log("Required HTTP AUTH:", process.env.HTTP_AUTH_TOKEN);
-
       if (
         process.env.HTTP_AUTH_TOKEN &&
         process.env.HTTP_AUTH_TOKEN !== req.headers.get("Authorization")
@@ -66,6 +66,10 @@ export function startHttpRoutes(
 
       if (url.pathname === "/") {
         return new Response(`Furi API Server is running on port ${port}`);
+      }
+
+      if (url.pathname.endsWith("/")) {
+        url.pathname = url.pathname.slice(0, -1);
       }
 
       // eg. /list
@@ -142,7 +146,12 @@ export function startHttpRoutes(
       // eg. /mcpName/env
       // Returns the environment variables for an MCP
       if (url.pathname.endsWith("/env")) {
-        return envResponse(url.pathname);
+        if (req.method === "POST") {
+          // console.log("Should be saving env");
+          // return saveEnvResponse(url.pathname);
+        } else {
+          return envResponse(url.pathname);
+        }
       }
 
       // eg. /mcpName/status (?lines=10, get the status + logs of an MCP)
@@ -167,6 +176,15 @@ export function startHttpRoutes(
       // Starts an MCP by name
       if (url.pathname.endsWith("/start")) {
         return startMCPResponse(url.pathname, req);
+      }
+
+      // eg. /mcpName/config
+      if (url.pathname.endsWith("/config")) {
+        if (req.method === "POST") {
+          return saveConfiguration(url.pathname, req);
+        } else {
+          return readConfiguration(url.pathname);
+        }
       }
 
       // eg. /http/status
@@ -194,6 +212,5 @@ export function startHttpRoutes(
 if (import.meta.main) {
   const PORT = parseInt(process.env.PORT || "9339");
   const exposeSudoRoutes = process.env.EXPOSE_SUDO === "true";
-  // console.log("HTTP AUTH TOKEN:", process.env.HTTP_AUTH_TOKEN);
   startHttpRoutes(PORT, exposeSudoRoutes);
 }
