@@ -12,12 +12,13 @@ import { singleStatusResponse } from "./endpoints/[mcpName]/status";
 import { stopResponse } from "./endpoints/[mcpName]/stop";
 import { restartResponse } from "./endpoints/[mcpName]/restart";
 import { startMCPResponse } from "./endpoints/[mcpName]/start";
-import { envResponse } from "./endpoints/[mcpName]/env";
+import { envResponse } from "./endpoints/[mcpName]/env/getEnv";
 import { httpStatusResponse } from "./endpoints/http/status";
 import { renameMCPResponse } from "./endpoints/[mcpName]/rename";
 import { whereResponse } from "./endpoints/where/where";
 import { readConfiguration } from "./endpoints/[mcpName]/config/read";
 import { saveConfiguration } from "./endpoints/[mcpName]/config/save";
+import { saveEnvResponse } from "./endpoints/[mcpName]/env/saveEnv";
 
 export function startHttpRoutes(
   port: number,
@@ -147,8 +148,7 @@ export function startHttpRoutes(
       // Returns the environment variables for an MCP
       if (url.pathname.endsWith("/env")) {
         if (req.method === "POST") {
-          // console.log("Should be saving env");
-          // return saveEnvResponse(url.pathname);
+          return saveEnvResponse(url.pathname, req);
         } else {
           return envResponse(url.pathname);
         }

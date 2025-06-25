@@ -50,7 +50,7 @@ import {
   restartAggregatorResponse,
   statusAggregatorResponse,
 } from "@/http/server";
-import { envResponse } from "@/http/server/endpoints/[mcpName]/env";
+import { envResponse } from "@/http/server/endpoints/[mcpName]/env/getEnv";
 import { httpStatusResponse } from "@/http/server/endpoints/http/status";
 import { renameMCPResponse } from "@/http/server/endpoints/[mcpName]/rename";
 
