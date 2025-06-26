@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync, writeFileSync } from "fs";
 import pm2 from "pm2";
 import { resolveFromUserData } from "@/helpers/paths";
 
@@ -112,6 +112,16 @@ export const startMCPCore = async (
         }
       );
     });
+
+    // Update configuration with last action
+    try {
+      if (config.installed[mcpName]) {
+        config.installed[mcpName].userLastAction = "start";
+
+        // Write updated configuration back to file
+        writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+      }
+    } catch (configError) {}
 
     return {
       success: true,

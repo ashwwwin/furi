@@ -1,4 +1,6 @@
 import pm2 from "pm2";
+import { readFileSync, writeFileSync } from "fs";
+import { resolveFromUserData } from "@/helpers/paths";
 
 /**
  * Core function to stop an MCP server without spinner UI
@@ -43,7 +45,7 @@ export const stopMCPCore = async (
 
     // Stop the process
     await new Promise<void>((resolve, reject) => {
-      pm2.delete(processName, (err) => {
+      pm2.stop(processName, (err) => {
         if (err) {
           reject(new Error(`Failed to stop process: ${err.message}`));
           return;
@@ -51,6 +53,19 @@ export const stopMCPCore = async (
         resolve();
       });
     });
+
+    // Update configuration with last action
+    try {
+      const configPath = resolveFromUserData("configuration.json");
+      const config = JSON.parse(readFileSync(configPath, "utf-8"));
+
+      if (config.installed[mcpName]) {
+        config.installed[mcpName].userLastAction = "stop";
+
+        // Write updated configuration back to file
+        writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+      }
+    } catch (configError) {}
 
     return {
       success: true,
