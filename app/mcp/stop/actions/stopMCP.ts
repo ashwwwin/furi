@@ -69,7 +69,7 @@ export const stopMCPCore = async (
 
     return {
       success: true,
-      message: `[${mcpName}] offline`,
+      message: `[${mcpName}] Stopped`,
     };
   } catch (error: any) {
     return {

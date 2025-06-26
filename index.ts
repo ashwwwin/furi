@@ -24,6 +24,7 @@ import {
   connectMCPAggregatorServer,
 } from "@/aggregator";
 import { upgradeFuri } from "@/upgrade";
+import { restoreMCPsState } from "@/restore";
 import { getBasePath, getUserDataPath } from "@/helpers/paths";
 import {
   getHttpPort,
@@ -425,6 +426,13 @@ program
   )
   .action(async () => {
     await connectMCPAggregatorServer();
+  });
+
+program
+  .command("restore")
+  .description("Restore the state of all MCPs to the last known state")
+  .action(async () => {
+    await restoreMCPsState();
   });
 
 program
