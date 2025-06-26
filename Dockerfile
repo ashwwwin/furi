@@ -55,5 +55,4 @@ ENV USERDATA_PATH=/data
 EXPOSE 9339
 # EXPOSE 9338
 
-RUN bun run /home/node/.furikake/index.ts restore
 CMD ["bun", "/home/node/.furikake/app/http/server/routes.ts"]

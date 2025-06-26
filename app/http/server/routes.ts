@@ -19,6 +19,7 @@ import { whereResponse } from "./endpoints/where/where";
 import { readConfiguration } from "./endpoints/[mcpName]/config/read";
 import { saveConfiguration } from "./endpoints/[mcpName]/config/save";
 import { saveEnvResponse } from "./endpoints/[mcpName]/env/saveEnv";
+import { restoreMCPsStateCore } from "@/restore/actions/restoreState";
 
 export function startHttpRoutes(
   port: number,
@@ -212,5 +213,7 @@ export function startHttpRoutes(
 if (import.meta.main) {
   const PORT = parseInt(process.env.PORT || "9339");
   const exposeSudoRoutes = process.env.EXPOSE_SUDO === "true";
-  startHttpRoutes(PORT, exposeSudoRoutes);
+  restoreMCPsStateCore().then(() => {
+    startHttpRoutes(PORT, exposeSudoRoutes);
+  });
 }
