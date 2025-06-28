@@ -45,7 +45,16 @@ export const startMCPResponse = async (
 
     try {
       // Start the MCP with the provided environment variables
-      await startMCP(mcpName, envJson, true);
+      const result = await startMCP(mcpName, envJson, true);
+
+      if (!result) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Failed to start MCP`,
+          })
+        );
+      }
 
       return new Response(
         JSON.stringify({

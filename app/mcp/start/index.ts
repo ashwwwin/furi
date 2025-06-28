@@ -4,7 +4,7 @@ import { scanEnvVars } from "../env/actions/scanEnvVars";
 import readline from "readline";
 import { readFileSync, writeFileSync } from "fs";
 import chalk from "chalk";
-import { resolveFromBase, resolveFromUserData } from "@/helpers/paths";
+import { resolveFromUserData } from "@/helpers/paths";
 
 export const startMCP = async (
   mcpName: string,
@@ -25,7 +25,7 @@ export const startMCP = async (
 
     if (!mcpConfig) {
       console.error(chalk.red(`[${mcpName}] Configuration not found`));
-      return;
+      return false;
     }
 
     // Process the environment variables from the JSON string if provided
@@ -53,7 +53,7 @@ export const startMCP = async (
             }`
           )
         );
-        return;
+        return false;
       }
     }
 
@@ -172,7 +172,7 @@ export const startMCP = async (
             `\n[${mcpName}] Aborted by user due to missing environment variables.`
           )
         );
-        return;
+        return false;
       }
     }
   } catch (error) {
@@ -183,7 +183,7 @@ export const startMCP = async (
         }`
       )
     );
-    return;
+    return false;
   }
 
   const spinner = createSpinner(`[${mcpName}] Starting`);
@@ -194,12 +194,15 @@ export const startMCP = async (
 
     if (result.success) {
       spinner.success({ text: result.message });
+      return true;
     } else {
       spinner.error({ text: result.message });
+      return false;
     }
   } catch (error: any) {
     spinner.error({
       text: `[${mcpName}] Failed to start: ${error.message || String(error)}`,
     });
+    return false;
   }
 };
