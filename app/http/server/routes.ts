@@ -20,6 +20,7 @@ import { readConfiguration } from "./endpoints/[mcpName]/config/read";
 import { saveConfiguration } from "./endpoints/[mcpName]/config/save";
 import { saveEnvResponse } from "./endpoints/[mcpName]/env/saveEnv";
 import { restoreMCPsStateCore } from "@/restore/actions/restoreState";
+import { getFullConfiguration } from "./endpoints/config";
 
 export function startHttpRoutes(
   port: number,
@@ -126,6 +127,10 @@ export function startHttpRoutes(
         return statusResponse();
       }
 
+      if (url.pathname == "/config") {
+        return getFullConfiguration();
+      }
+
       if (url.pathname.endsWith("/rename")) {
         return renameMCPResponse(url.pathname, url);
       }
@@ -198,6 +203,10 @@ export function startHttpRoutes(
       // Returns the path to the .furikake directory
       if (url.pathname.endsWith("/where")) {
         return whereResponse();
+      }
+
+      if (url.pathname.endsWith("/config")) {
+        return getFullConfiguration();
       }
 
       return new Response(
