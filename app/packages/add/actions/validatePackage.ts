@@ -4,6 +4,7 @@ type DetectRepoResult = {
   packageUrl: string;
   isInstalled: boolean;
   alias: string;
+  error?: string; // Add error field for detailed error messages
 };
 
 import { join } from "path";
@@ -29,6 +30,8 @@ export const validatePackage = async (
   // Validate MCP Name format (user/repo)
   const parts = mcpName.split("/");
   if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    result.error =
+      "Invalid package name format. Expected format: 'author/repo'";
     return result;
   }
 
@@ -37,7 +40,11 @@ export const validatePackage = async (
   result.packageUrl = packageUrl;
 
   // Check if repository exists on GitHub
-  result.isValid = await checkGitHubRepoExists(mcpName);
+  const { exists, error } = await checkGitHubRepoExists(mcpName);
+  result.isValid = exists;
+  if (error) {
+    result.error = error;
+  }
 
   // Check if package is already installed
   const owner = parts[0];
@@ -96,17 +103,53 @@ export const validatePackage = async (
  * Checks if a GitHub repository exists by making a request to the GitHub API
  * Using Bun's native fetch API
  */
-async function checkGitHubRepoExists(mcpName: string): Promise<boolean> {
+async function checkGitHubRepoExists(
+  mcpName: string
+): Promise<{ exists: boolean; error?: string }> {
   try {
     const [owner, repo] = mcpName.split("/");
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
 
     const response = await fetch(apiUrl, {
       method: "GET",
+      headers: {
+        Accept: "application/vnd.github.v3+json",
+        "User-Agent": "furikake-cli",
+      },
     });
 
-    return response.status === 200;
+    if (response.status === 200) {
+      return { exists: true };
+    } else if (response.status === 404) {
+      return {
+        exists: false,
+        error: `Repository '${mcpName}' not found on GitHub`,
+      };
+    } else if (response.status === 403) {
+      // Check if it's rate limited
+      const rateLimitRemaining = response.headers.get("X-RateLimit-Remaining");
+      if (rateLimitRemaining === "0") {
+        return {
+          exists: false,
+          error: "GitHub API rate limit exceeded. Please try again later.",
+        };
+      }
+      return {
+        exists: false,
+        error: "Access forbidden. The repository may be private.",
+      };
+    } else {
+      return {
+        exists: false,
+        error: `GitHub API returned status ${response.status}`,
+      };
+    }
   } catch (error) {
-    return false;
+    return {
+      exists: false,
+      error: `Failed to check repository: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    };
   }
 }

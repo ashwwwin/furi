@@ -1,13 +1,22 @@
-# Use Node.js 23.11 base image
-FROM node:23.11
+# Use Ubuntu base image
+FROM ubuntu:22.04
 
-# Install system dependencies and Bun
+# Install system dependencies, Node.js, and Bun
 USER root
 RUN apt-get update && apt-get install -y \
     curl \
     git \
     unzip \
+    ca-certificates \
+    gnupg \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 23.x via NodeSource repository
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_23.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    apt-get install -y nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 # Install Bun globally in /usr/local/bin
 RUN curl -fsSL https://bun.sh/install | bash && \
@@ -15,11 +24,11 @@ RUN curl -fsSL https://bun.sh/install | bash && \
     chmod +x /usr/local/bin/bun && \
     rm -rf /root/.bun
 
-# Install PM2, TypeScript and related tools globally with npm
-RUN npm install -g pm2 typescript tsx ts-node @swc/core
+# Install PM2, TypeScript, pnpm, yarn and related tools globally with npm
+RUN npm install -g pm2 typescript tsx ts-node @swc/core pnpm yarn
 
-# Create node user home directory and switch to node user
-RUN mkdir -p /home/node
+# Create node user and home directory
+RUN useradd -m -s /bin/bash node
 USER node
 WORKDIR /home/node
 
