@@ -21,6 +21,7 @@ import { saveConfiguration } from "./endpoints/[mcpName]/config/save";
 import { saveEnvResponse } from "./endpoints/[mcpName]/env/saveEnv";
 import { restoreMCPsStateCore } from "@/restore/actions/restoreState";
 import { getFullConfiguration } from "./endpoints/config";
+import { getVersion } from "./endpoints/version";
 
 export function startHttpRoutes(
   port: number,
@@ -127,8 +128,16 @@ export function startHttpRoutes(
         return statusResponse();
       }
 
+      // eg. /config
+      // Returns the full configuration of all MCPs
       if (url.pathname == "/config") {
         return getFullConfiguration();
+      }
+
+      // eg. /version
+      // Returns the version of the server
+      if (url.pathname == "/version") {
+        return getVersion();
       }
 
       if (url.pathname.endsWith("/rename")) {
