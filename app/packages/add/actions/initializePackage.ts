@@ -1,5 +1,11 @@
 import { join, relative, dirname } from "path";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import {
+  existsSync,
+  readFileSync,
+  writeFileSync,
+  mkdirSync,
+  unlinkSync,
+} from "node:fs";
 import {
   getPackagePath,
   resolveFromBase,
@@ -57,6 +63,11 @@ async function createTransportWrapper(
     const transportDir = dirname(socketPath);
     if (!existsSync(transportDir)) {
       mkdirSync(transportDir, { recursive: true });
+    }
+
+    // Clean up any existing socket
+    if (existsSync(socketPath)) {
+      unlinkSync(socketPath);
     }
 
     // Parse the original command to handle TypeScript files properly
@@ -330,10 +341,71 @@ function cleanup() {
   }
 }
 
+// Helper function to extract detailed error information from shell errors
+function getShellErrorDetails(error: any): string {
+  const errorDetails: string[] = [];
+
+  if (error.exitCode !== undefined) {
+    errorDetails.push(`Exit code: ${error.exitCode}`);
+  }
+
+  if (error.stderr) {
+    const stderrText = error.stderr.toString().trim();
+    if (stderrText) {
+      errorDetails.push(`Error output:\n${stderrText}`);
+    }
+  }
+
+  if (error.stdout) {
+    const stdoutText = error.stdout.toString().trim();
+    if (stdoutText && !errorDetails.some((d) => d.includes("Error output:"))) {
+      errorDetails.push(`Command output:\n${stdoutText}`);
+    }
+  }
+
+  if (errorDetails.length > 0) {
+    return errorDetails.join("\n");
+  }
+
+  return error instanceof Error ? error.message : String(error);
+}
+
+// Helper function to add suggestions based on error type
+function addErrorSuggestions(errorText: string): string {
+  const lowerError = errorText.toLowerCase();
+  let suggestions = "";
+
+  if (lowerError.includes("eresolve") || lowerError.includes("peer dep")) {
+    suggestions = "\n\nSuggestions:\n";
+    suggestions += "• Try running: npm install --legacy-peer-deps\n";
+    suggestions +=
+      "• Or manually install in the package directory with --force flag";
+  } else if (
+    lowerError.includes("eacces") ||
+    lowerError.includes("permission")
+  ) {
+    suggestions = "\n\nThis appears to be a permissions issue. Try:\n";
+    suggestions += "• Running with sudo (not recommended)\n";
+    suggestions +=
+      "• Fixing npm permissions: https://docs.npmjs.com/resolving-eacces-permissions-errors";
+  } else if (
+    lowerError.includes("enotfound") ||
+    lowerError.includes("getaddrinfo")
+  ) {
+    suggestions = "\n\nThis appears to be a network issue. Check:\n";
+    suggestions += "• Your internet connection\n";
+    suggestions += "• Proxy/firewall settings\n";
+    suggestions += "• npm registry configuration";
+  }
+
+  return suggestions;
+}
+
 // The goal of this function is to initialize the package
 // Get it to the point where it can be used by the user
 export const initializePackage = async (
-  mcpName: string
+  mcpName: string,
+  spinner?: any
 ): Promise<PackageOutput> => {
   try {
     // Get the package path
@@ -477,6 +549,10 @@ export const initializePackage = async (
               buildSuccessful = true;
             } catch (buildError) {
               // console.warn(`Build failed: ${String(buildError)}`);
+              const errorDetails = getShellErrorDetails(buildError);
+              throw new Error(
+                `Build command '${buildCommand}' failed:\n${errorDetails}`
+              );
             }
           }
 
@@ -596,8 +672,15 @@ process.on('SIGTERM', () => {
               try {
                 await Bun.$`cd ${packagePath} && npm install --save-dev tsx typescript`.quiet();
                 buildSuccessful = true;
-              } catch (installError) {
+              } catch (installError: any) {
                 console.warn(`Failed to install tsx: ${String(installError)}`);
+                // Capture detailed error information for tsx install failure
+                if (installError.stderr) {
+                  const stderrText = installError.stderr.toString().trim();
+                  if (stderrText) {
+                    console.warn(`Install error details: ${stderrText}`);
+                  }
+                }
               }
             } else {
               console.warn(`Could not find TypeScript entry point`);
@@ -609,12 +692,158 @@ process.on('SIGTERM', () => {
         }
       }
     } catch (error) {
-      return {
-        success: false,
-        message: `Failed to initialize package: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
-      };
+      const errorDetails = getShellErrorDetails(error);
+
+      // Check if it's a peer dependency conflict that can be resolved with --legacy-peer-deps
+      if (
+        errorDetails.includes("this command with --force or --legacy-peer-deps")
+      ) {
+        // Update spinner message if available
+        if (spinner) {
+          spinner.update(`[${mcpName}] Installing with peer dependencies`);
+        }
+
+        try {
+          // Retry with legacy peer deps flag
+          await Bun.$`cd ${packagePath} && npm install --ignore-scripts --legacy-peer-deps`.quiet();
+
+          // If successful, continue with the build process
+          const hasDistDir = existsSync(join(packagePath, "dist"));
+          const hasLibDir = existsSync(join(packagePath, "lib"));
+          const hasOutDir = existsSync(join(packagePath, "out"));
+
+          if (hasDistDir || hasLibDir || hasOutDir) {
+            buildSuccessful = true;
+          } else {
+            // Continue with build process if needed
+            const needsBuild = hasTsConfig || buildCommand;
+
+            if (needsBuild) {
+              if (buildCommand) {
+                try {
+                  await Bun.$`sh -c ${`cd ${packagePath} && ${buildCommand}`}`.quiet();
+                  buildSuccessful = true;
+                } catch (buildError) {
+                  const buildErrorDetails = getShellErrorDetails(buildError);
+                  throw new Error(
+                    `Build command '${buildCommand}' failed:\n${buildErrorDetails}`
+                  );
+                }
+              }
+
+              // Handle TypeScript files if build failed or no build command
+              if (!buildSuccessful && hasTsConfig) {
+                const entryPoints = [
+                  {
+                    path: join(packagePath, "src", "index.ts"),
+                    relativePath: "../src/index.ts",
+                  },
+                  {
+                    path: join(packagePath, "index.ts"),
+                    relativePath: "../index.ts",
+                  },
+                  {
+                    path: join(packagePath, "src", "main.ts"),
+                    relativePath: "../src/main.ts",
+                  },
+                  {
+                    path: join(packagePath, "main.ts"),
+                    relativePath: "../main.ts",
+                  },
+                ];
+
+                let foundTsFile = null;
+                for (const entry of entryPoints) {
+                  if (existsSync(entry.path)) {
+                    foundTsFile = entry;
+                    break;
+                  }
+                }
+
+                if (foundTsFile) {
+                  const distDir = join(packagePath, "dist");
+                  if (!existsSync(distDir)) {
+                    mkdirSync(distDir, { recursive: true });
+                  }
+
+                  const wrapperContent = isEsm
+                    ? `
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import { spawn } from 'child_process';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const srcPath = join(__dirname, '${foundTsFile.relativePath}');
+
+const child = spawn('npx', ['tsx', srcPath], {
+  stdio: 'inherit',
+  cwd: __dirname
+});
+
+child.on('exit', (code) => process.exit(code || 0));
+process.on('SIGINT', () => child.kill('SIGINT'));
+process.on('SIGTERM', () => child.kill('SIGTERM'));
+`
+                    : `
+const { spawn } = require('child_process');
+const path = require('path');
+
+const srcPath = path.join(__dirname, '${foundTsFile.relativePath}');
+
+const child = spawn('npx', ['tsx', srcPath], {
+  stdio: 'inherit',
+  cwd: __dirname
+});
+
+child.on('exit', (code) => process.exit(code || 0));
+process.on('SIGINT', () => child.kill('SIGINT'));
+process.on('SIGTERM', () => child.kill('SIGTERM'));
+`;
+
+                  writeFileSync(
+                    join(distDir, "index.js"),
+                    wrapperContent,
+                    "utf-8"
+                  );
+
+                  if (isEsm) {
+                    writeFileSync(
+                      join(distDir, "package.json"),
+                      JSON.stringify({ type: "module" }, null, 2),
+                      "utf-8"
+                    );
+                  }
+
+                  try {
+                    await Bun.$`cd ${packagePath} && npm install --save-dev tsx typescript --legacy-peer-deps`.quiet();
+                    buildSuccessful = true;
+                  } catch (installError: any) {
+                    console.warn(
+                      `Failed to install tsx: ${String(installError)}`
+                    );
+                  }
+                }
+              }
+            } else {
+              buildSuccessful = true;
+            }
+          }
+        } catch (retryError) {
+          const retryErrorDetails = getShellErrorDetails(retryError);
+          return {
+            success: false,
+            message: `Failed to install dependencies (even with --legacy-peer-deps):\n${retryErrorDetails}`,
+          };
+        }
+      } else {
+        // For other errors, show detailed error with suggestions
+        const suggestions = addErrorSuggestions(errorDetails);
+        return {
+          success: false,
+          message: `Failed to install dependencies:\n${errorDetails}${suggestions}`,
+        };
+      }
     }
 
     // Determine the final run command, potentially overriding based on build output

@@ -26,7 +26,7 @@ export const addPackage = async (mcpName: string) => {
       return spinner.error(`[${mcpName}] Could not find repo`);
 
     await cloneRepo(result.packageUrl);
-    const response = await initializePackage(mcpName);
+    const response = await initializePackage(mcpName, spinner);
 
     if (!response.success) {
       spinner.warn(`Failed to build\n     \x1b[2m${response.message}\x1b[0m`);
