@@ -5,6 +5,8 @@ import { initializePackage } from "./actions/initializePackage";
 import { join } from "path";
 import { deletePackage } from "../remove/actions/deletePackage";
 import { getPackagePath, getInstalledPath } from "@/helpers/paths";
+import { readConfig, writeConfig } from "@/helpers/config";
+import { resolveFromUserData } from "@/helpers/paths";
 
 export const addPackage = async (mcpName: string) => {
   const spinner = createSpinner(`[${mcpName}] Installing`);
@@ -65,9 +67,42 @@ export const addPackage = async (mcpName: string) => {
           ? getPackagePath(owner, repo)
           : join(getInstalledPath(), mcpName);
 
-      console.log(
-        `     \x1b[2mYou can edit the package in ${packagePath}\x1b[0m`
-      );
+      // Update configuration.json to register the package even though build failed
+      try {
+        const config = readConfig();
+
+        if (!config.installed) {
+          config.installed = {};
+        }
+
+        const socketPath = resolveFromUserData(
+          `/transport/furi_${mcpName.replace("/", "-")}.sock`
+        );
+
+        // Add the package to configuration with a note that it needs manual setup
+        config.installed[mcpName] = {
+          run: null, // No run command since build failed
+          source: packagePath,
+          socketPath: socketPath,
+          originalRun: null,
+          transportWrapper: false,
+        };
+
+        writeConfig(config);
+
+        console.log(
+          `     \x1b[2mYou can edit the package in ${packagePath}\x1b[0m`
+        );
+        console.log(
+          `     \x1b[2mPackage registered in configuration but requires manual setup\x1b[0m`
+        );
+      } catch (error) {
+        console.error(
+          `     \x1b[31mFailed to update configuration: ${
+            error instanceof Error ? error.message : String(error)
+          }\x1b[0m`
+        );
+      }
 
       return;
     }
