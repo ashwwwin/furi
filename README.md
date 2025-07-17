@@ -8,7 +8,7 @@ furi is an easy to use, CLI & API for MCP management.
 - Smithery.yaml detection (or auto detects/handles execution)
 - Fully featured CLI [nanospinners, readability]
 - Typescript & Javascript MCP's are supported
-- Python based MCP's are a key roadmap item (and will be supported)
+- Python based MCP's are supported with automatic virtual environment setup
 - HTTP API Routes (uses Bun http, stdio to http, clear and standard routes)
 - Customizable port and visibility of sudo routes
 - View all running MCPs + logs for each process
