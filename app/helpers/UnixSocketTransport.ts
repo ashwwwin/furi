@@ -116,8 +116,9 @@ export class UnixSocketTransport {
                   this.onmessage(message);
                 }
               } catch (error) {
-                // console.error("[UnixSocket] Failed to parse message:", error);
-                // Don't propagate parse errors as they might be recoverable
+                // Log parse errors for debugging while keeping non-critical errors from crashing the transport
+                console.warn(`[UnixSocket] Failed to parse message from ${this.socketPath}:`, error, "Raw line:", line.substring(0, 100) + (line.length > 100 ? "..." : ""));
+                // Only continue processing other messages, don't crash the entire transport
               }
             }
           }

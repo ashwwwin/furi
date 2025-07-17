@@ -94,8 +94,14 @@ STRICTLY only return in the format of ["tool1", "tool2", "tool3"].`;
       return { error: "Invalid LLM response format" };
     }
 
-    // Assuming result.text is a string like '["tool1", "tool2"]'
-    const toolNames = JSON.parse(responseText);
+    // Safely parse JSON from LLM response with proper error handling
+    let toolNames;
+    try {
+      toolNames = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error("Failed to parse JSON from LLM response:", parseError, "Response:", responseText);
+      return { error: "Invalid JSON format in LLM response" };
+    }
 
     if (!Array.isArray(toolNames)) {
       console.error("LLM did not return a valid array:", responseText);

@@ -38,14 +38,16 @@ export const addPackage = async (mcpName: string) => {
         `\n[${mcpName}] Do you want to keep the repo? (y/n) `
       );
 
-      // Read user input from stdin
-      let input = "";
-      for await (const line of console) {
-        input = line;
-        break;
-      }
+      // Read user input from stdin properly
+      const input = await new Promise<string>((resolve) => {
+        process.stdin.setEncoding('utf8');
+        process.stdin.once('data', (data) => {
+          resolve(data.toString().trim());
+        });
+        process.stdin.resume();
+      });
 
-      if (input.trim().toLowerCase() !== "y") {
+      if (input.toLowerCase() !== "y") {
         // Delete the package directory if the build failed
         await deletePackage(mcpName);
 
