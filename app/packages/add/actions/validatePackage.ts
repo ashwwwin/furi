@@ -110,12 +110,21 @@ async function checkGitHubRepoExists(
     const [owner, repo] = mcpName.split("/");
     const apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
 
+    // Prepare headers with optional GitHub authentication
+    const headers: Record<string, string> = {
+      Accept: "application/vnd.github.v3+json",
+      "User-Agent": "furikake-cli",
+    };
+
+    // Add GitHub authentication if GITHUB_KEY environment variable is available
+    const githubToken = process.env.GITHUB_KEY;
+    if (githubToken) {
+      headers.Authorization = `Bearer ${githubToken}`;
+    }
+
     const response = await fetch(apiUrl, {
       method: "GET",
-      headers: {
-        Accept: "application/vnd.github.v3+json",
-        "User-Agent": "furikake-cli",
-      },
+      headers,
     });
 
     if (response.status === 200) {

@@ -31,15 +31,27 @@ export const cloneRepo = async (
     const repoOwner = packageUrl.split("/")[3];
     const repoPath = `${targetDir}/${repoOwner}/${repoName}`;
 
-    // Clone the repository using isomorphic-git
-    await git.clone({
+    // Prepare clone options with optional GitHub authentication
+    const cloneOptions: any = {
       fs,
       http,
       dir: repoPath,
       url: packageUrl,
       singleBranch: true,
       depth: 1,
-    });
+    };
+
+    // Add GitHub authentication if GITHUB_KEY environment variable is available
+    const githubToken = process.env.GITHUB_KEY;
+    if (githubToken && packageUrl.includes("github.com")) {
+      cloneOptions.onAuth = () => ({
+        username: githubToken,
+        password: "x-oauth-basic",
+      });
+    }
+
+    // Clone the repository using isomorphic-git
+    await git.clone(cloneOptions);
 
     return {
       success: true,

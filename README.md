@@ -245,6 +245,22 @@ or in your `.env` file:
 HTTP_AUTH_TOKEN=your-secret-token
 ```
 
+#### GitHub Rate Limiting
+
+To avoid GitHub API rate limiting when installing packages, you can provide a GitHub personal access token:
+
+```bash
+export GITHUB_KEY=your-github-token
+```
+
+or in your `.env` file:
+
+```bash
+GITHUB_KEY=your-github-token
+```
+
+This increases your rate limit from 60 requests/hour to 5,000 requests/hour. You can create a personal access token at [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens).
+
 #### API Response Format
 
 All API endpoints follow a standardized JSON response format:
