@@ -301,6 +301,14 @@ function extractEnvVarsFromCode(code: string): string[] {
     // Check for API_KEY mentions in code
     /["']([A-Z0-9_]+_API_KEY)["']/g,
     /["']([A-Z0-9_]+_TOKEN)["']/g,
+    // Python specific patterns
+    /os\.environ\.get\(["']([A-Z0-9_]+)["']/g,
+    /os\.environ\[["']([A-Z0-9_]+)["']\]/g,
+    /os\.getenv\(["']([A-Z0-9_]+)["']/g,
+    // Python config patterns
+    /config\(["']([A-Z0-9_]+)["']/g,
+    // Python settings classes
+    /([A-Z0-9_]+):\s*str\s*=\s*Field\(/g,
   ];
 
   for (const regex of regexPatterns) {
@@ -401,6 +409,41 @@ async function scanFileForEnvVars(
         description: (match, filePath) =>
           `Used with os.environ.get in ${filePath}`,
       },
+      // Python os.environ direct access
+      {
+        regex: /os\.environ\[["']([A-Z0-9_]+)["']\]/g,
+        group: 1,
+        description: (match, filePath) =>
+          `Used with os.environ["${match}"] in ${filePath}`,
+      },
+      // Python os.getenv
+      {
+        regex: /os\.getenv\(["']([A-Z0-9_]+)["']/g,
+        group: 1,
+        description: (match, filePath) =>
+          `Used with os.getenv in ${filePath}`,
+      },
+      // Python environment variable assignment
+      {
+        regex: /([A-Z0-9_]+)\s*=\s*os\.environ/g,
+        group: 1,
+        description: (match, filePath) =>
+          `Assigned from os.environ in ${filePath}`,
+      },
+      // Python dotenv or python-decouple
+      {
+        regex: /config\(["']([A-Z0-9_]+)["']/g,
+        group: 1,
+        description: (match, filePath) =>
+          `Used with config() in ${filePath}`,
+      },
+      // Python pydantic settings
+      {
+        regex: /class\s+\w*Settings?.*:\s*[\s\S]*?([A-Z0-9_]+):\s*str/g,
+        group: 1,
+        description: (match, filePath) =>
+          `Defined in Settings class in ${filePath}`,
+      },
       // Docker ENV or ARG
       {
         regex: /(?:ENV|ARG)\s+([A-Z0-9_]+)=/g,
@@ -449,8 +492,9 @@ async function scanFileForEnvVars(
       if (!line) continue;
 
       // Look for comments that might describe environment variables
+      // Support both JavaScript (//) and Python (#) style comments
       const commentMatch = line.match(
-        /\/\/\s*.*\b([A-Z0-9_]+)\b.*(?:env|environment)/i
+        /(?:\/\/|#)\s*.*\b([A-Z0-9_]+)\b.*(?:env|environment)/i
       );
       if (commentMatch && commentMatch[1]) {
         const envVar = commentMatch[1];
@@ -471,7 +515,7 @@ async function scanFileForEnvVars(
             foundEnvVars[envVar].description.startsWith("Found in"))
         ) {
           // Extract the comment text
-          const commentText = commentMatch[0].replace(/\/\/\s*/, "");
+          const commentText = commentMatch[0].replace(/(?:\/\/|#)\s*/, "");
           foundEnvVars[envVar] = {
             description: `Comment: ${commentText} (in ${filePath
               .split("/")
