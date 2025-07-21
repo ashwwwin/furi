@@ -48,6 +48,9 @@ RUN mkdir -p /data/installed /data/transport && \
     chown -R node:node /data && \
     chmod -R 755 /data
 
+RUN echo "alias furi='bun run /home/node/.furikake/index.ts'" \
+    >> /etc/bash.bashrc    
+    
 # Switch back to node user
 USER node
 
