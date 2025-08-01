@@ -136,7 +136,12 @@ const __dirname = path.dirname(__filename);
 
 const mcpName = '${mcpName}';
 const socketPath = '${socketPath}';
-const originalCommand = ${JSON.stringify(executionCommand)};
+
+// Get the command from arguments passed by PM2 or use the fallback
+const wrapperArgs = process.argv.slice(2);
+const originalCommand = wrapperArgs.length > 0 
+  ? wrapperArgs.join(' ') 
+  : ${JSON.stringify(executionCommand)};
 
 // Ensure the transport directory exists
 const transportDir = path.dirname(socketPath);
@@ -168,6 +173,15 @@ mcpProcess.stdout.on('data', (data) => process.stdout.write(data));
 mcpProcess.stderr.on('data', (data) => process.stderr.write(data));
 process.stdin.pipe(mcpProcess.stdin);
 
+// Handle MCP process stream errors once
+mcpProcess.stdout.on('error', (err) => {
+  // console.log('[Furikake] MCP stdout error:', err.message);
+});
+
+mcpProcess.stdin.on('error', (err) => {
+  // console.log('[Furikake] MCP stdin error:', err.message);
+});
+
 // Create Unix socket server for additional connections
 const server = net.createServer((socket) => {
   // console.log('[Furikake] Client connected via Unix socket');
@@ -182,20 +196,9 @@ const server = net.createServer((socket) => {
     // console.log('[Furikake] Client disconnected from Unix socket');
   });
 
-  // Create bidirectional pipe between socket and MCP process with error handling
+  // Create bidirectional pipe between socket and MCP process
   socket.pipe(mcpProcess.stdin, { end: false });
   mcpProcess.stdout.pipe(socket, { end: false });
-
-  // Handle pipe errors
-  mcpProcess.stdout.on('error', (err) => {
-    // console.log('[Furikake] MCP stdout error:', err.message);
-    try { socket.destroy(); } catch (e) { /* ignore */ }
-  });
-
-  mcpProcess.stdin.on('error', (err) => {
-    // console.log('[Furikake] MCP stdin error:', err.message);
-    try { socket.destroy(); } catch (e) { /* ignore */ }
-  });
 });
 
 server.listen(socketPath, () => {
@@ -236,7 +239,12 @@ const path = require('path');
 
 const mcpName = '${mcpName}';
 const socketPath = '${socketPath}';
-const originalCommand = ${JSON.stringify(executionCommand)};
+
+// Get the command from arguments passed by PM2 or use the fallback
+const wrapperArgs = process.argv.slice(2);
+const originalCommand = wrapperArgs.length > 0 
+  ? wrapperArgs.join(' ') 
+  : ${JSON.stringify(executionCommand)};
 
 // Ensure the transport directory exists
 const transportDir = path.dirname(socketPath);
@@ -268,6 +276,15 @@ mcpProcess.stdout.on('data', (data) => process.stdout.write(data));
 mcpProcess.stderr.on('data', (data) => process.stderr.write(data));
 process.stdin.pipe(mcpProcess.stdin);
 
+// Handle MCP process stream errors once
+mcpProcess.stdout.on('error', (err) => {
+  // console.log('[Furikake] MCP stdout error:', err.message);
+});
+
+mcpProcess.stdin.on('error', (err) => {
+  // console.log('[Furikake] MCP stdin error:', err.message);
+});
+
 // Create Unix socket server for additional connections
 const server = net.createServer((socket) => {
   // console.log('[Furikake] Client connected via Unix socket');
@@ -282,20 +299,9 @@ const server = net.createServer((socket) => {
     // console.log('[Furikake] Client disconnected from Unix socket');
   });
 
-  // Create bidirectional pipe between socket and MCP process with error handling
+  // Create bidirectional pipe between socket and MCP process
   socket.pipe(mcpProcess.stdin, { end: false });
   mcpProcess.stdout.pipe(socket, { end: false });
-
-  // Handle pipe errors
-  mcpProcess.stdout.on('error', (err) => {
-    // console.log('[Furikake] MCP stdout error:', err.message);
-    try { socket.destroy(); } catch (e) { /* ignore */ }
-  });
-
-  mcpProcess.stdin.on('error', (err) => {
-    // console.log('[Furikake] MCP stdin error:', err.message);
-    try { socket.destroy(); } catch (e) { /* ignore */ }
-  });
 });
 
 server.listen(socketPath, () => {

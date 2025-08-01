@@ -21,7 +21,13 @@ export const startMCPCore = async (
     }
 
     const runCommand = mcpConfig.run || "npm run start";
-    const [cmd, ...args] = runCommand.split(" ");
+    let [cmd, ...args] = runCommand.split(" ");
+
+    // If using transport wrapper, pass the originalRun command as arguments
+    if (mcpConfig.transportWrapper && mcpConfig.originalRun) {
+      // The wrapper expects the script path first, then the original command as arguments
+      args = [args[0], ...mcpConfig.originalRun.split(" ")];
+    }
 
     const cwd = mcpConfig.source || `installed/${mcpName}`;
 
@@ -29,6 +35,7 @@ export const startMCPCore = async (
     // console.log(`[${mcpName}] DEBUG: Using run command: ${runCommand}`);
     // console.log(`[${mcpName}] DEBUG: Working directory: ${cwd}`);
     // console.log(`[${mcpName}] DEBUG: Transport wrapper enabled: ${mcpConfig.transportWrapper}`);
+    // console.log(`[${mcpName}] DEBUG: Args being passed: ${JSON.stringify(args)}`);
 
     // Initialize environment variables with a clean slate
     const env: Record<string, string> = {};
