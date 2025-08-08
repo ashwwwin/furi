@@ -26,7 +26,406 @@ type SmitheryConfig = {
   };
 };
 
-// Create a transport wrapper that enables multiple connection methods
+// Helper function to detect Python package type
+function detectPythonPackageType(packagePath: string): {
+  isPython: boolean;
+  hasRequirements: boolean;
+  hasSetupPy: boolean;
+  hasPyprojectToml: boolean;
+  hasPoetryLock: boolean;
+  hasPipfile: boolean;
+  mainModule?: string;
+} {
+  const requirements = existsSync(join(packagePath, "requirements.txt"));
+  const setupPy = existsSync(join(packagePath, "setup.py"));
+  const pyprojectToml = existsSync(join(packagePath, "pyproject.toml"));
+  const poetryLock = existsSync(join(packagePath, "poetry.lock"));
+  const pipfile = existsSync(join(packagePath, "Pipfile"));
+
+  // Check for common Python entry points
+  const possibleMainModules = [
+    "main.py",
+    "app.py",
+    "server.py",
+    "mcp_server.py",
+    "__main__.py",
+    "src/main.py",
+    "src/app.py",
+    "src/server.py",
+  ];
+
+  let mainModule: string | undefined;
+  for (const module of possibleMainModules) {
+    if (existsSync(join(packagePath, module))) {
+      mainModule = module;
+      break;
+    }
+  }
+
+  const isPython = requirements || setupPy || pyprojectToml || poetryLock || pipfile || mainModule !== undefined;
+
+  return {
+    isPython,
+    hasRequirements: requirements,
+    hasSetupPy: setupPy,
+    hasPyprojectToml: pyprojectToml,
+    hasPoetryLock: poetryLock,
+    hasPipfile: pipfile,
+    mainModule,
+  };
+}
+
+// Helper function to get Python executable path
+async function getPythonExecutable(): Promise<string> {
+  // Try different Python executables in order of preference
+  const pythonCommands = ["python3", "python", "python3.11", "python3.10", "python3.9", "python3.8"];
+
+  for (const cmd of pythonCommands) {
+    try {
+      const result = await Bun.$`which ${cmd}`.quiet();
+      if (result.exitCode === 0) {
+        return cmd;
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  // Default fallback
+  return "python3";
+}
+
+// Helper function to create Python virtual environment and install dependencies
+async function setupPythonEnvironment(packagePath: string, packageInfo: ReturnType<typeof detectPythonPackageType>): Promise<{
+  success: boolean;
+  venvPath?: string;
+  pythonPath?: string;
+  error?: string;
+}> {
+  try {
+    const venvPath = join(packagePath, ".venv");
+    const pythonExec = await getPythonExecutable();
+
+    // Create virtual environment
+    try {
+      await Bun.$`cd ${packagePath} && ${pythonExec} -m venv .venv`.quiet();
+    } catch (venvError) {
+      return {
+        success: false,
+        error: `Failed to create virtual environment: ${String(venvError)}`,
+      };
+    }
+
+    // Determine the Python executable path in the virtual environment
+    const isWindows = process.platform === "win32";
+    const pythonPath = isWindows
+      ? join(venvPath, "Scripts", "python.exe")
+      : join(venvPath, "bin", "python");
+
+    // Upgrade pip first
+    try {
+      await Bun.$`cd ${packagePath} && ${pythonPath} -m pip install --upgrade pip`.quiet();
+    } catch (pipUpgradeError) {
+      console.warn(`Failed to upgrade pip: ${String(pipUpgradeError)}`);
+    }
+
+    // Install dependencies based on package type
+    if (packageInfo.hasRequirements) {
+      try {
+        await Bun.$`cd ${packagePath} && ${pythonPath} -m pip install -r requirements.txt`.quiet();
+      } catch (requirementsError) {
+        return {
+          success: false,
+          error: `Failed to install requirements.txt: ${String(requirementsError)}`,
+        };
+      }
+    } else if (packageInfo.hasSetupPy) {
+      try {
+        await Bun.$`cd ${packagePath} && ${pythonPath} -m pip install -e .`.quiet();
+      } catch (setupError) {
+        return {
+          success: false,
+          error: `Failed to install with setup.py: ${String(setupError)}`,
+        };
+      }
+    } else if (packageInfo.hasPyprojectToml) {
+      try {
+        await Bun.$`cd ${packagePath} && ${pythonPath} -m pip install -e .`.quiet();
+      } catch (pyprojectError) {
+        return {
+          success: false,
+          error: `Failed to install with pyproject.toml: ${String(pyprojectError)}`,
+        };
+      }
+    } else if (packageInfo.hasPoetryLock) {
+      // Check if poetry is available
+      try {
+        await Bun.$`which poetry`.quiet();
+        await Bun.$`cd ${packagePath} && poetry install`.quiet();
+      } catch (poetryError) {
+        return {
+          success: false,
+          error: `Poetry not found or failed to install dependencies: ${String(poetryError)}`,
+        };
+      }
+    } else if (packageInfo.hasPipfile) {
+      // Check if pipenv is available
+      try {
+        await Bun.$`which pipenv`.quiet();
+        await Bun.$`cd ${packagePath} && pipenv install`.quiet();
+      } catch (pipenvError) {
+        return {
+          success: false,
+          error: `Pipenv not found or failed to install dependencies: ${String(pipenvError)}`,
+        };
+      }
+    }
+
+    // Install common MCP dependencies if not already present
+    try {
+      await Bun.$`cd ${packagePath} && ${pythonPath} -m pip install mcp`.quiet();
+    } catch (mcpInstallError) {
+      console.warn(`Failed to install mcp package: ${String(mcpInstallError)}`);
+    }
+
+    return {
+      success: true,
+      venvPath,
+      pythonPath,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to setup Python environment: ${String(error)}`,
+    };
+  }
+}
+
+// Create a transport wrapper for Python MCP servers
+async function createPythonTransportWrapper(
+  packagePath: string,
+  mcpName: string,
+  originalRunCommand: string,
+  pythonPath: string
+): Promise<{ success: boolean; runCommand?: string }> {
+  try {
+    const wrapperPath = join(packagePath, "furi-transport-wrapper.py");
+    const socketPath = resolveFromUserData(
+      `/transport/furi_${mcpName.replace("/", "-")}.sock`
+    );
+
+    // Ensure the transport directory exists
+    const transportDir = dirname(socketPath);
+    if (!existsSync(transportDir)) {
+      mkdirSync(transportDir, { recursive: true });
+    }
+
+    // Clean up any existing socket
+    if (existsSync(socketPath)) {
+      unlinkSync(socketPath);
+    }
+
+    const wrapperContent = `#!/usr/bin/env python3
+"""
+Furikake Transport Wrapper for Python MCP Servers
+This wrapper enables multiple connection methods to the MCP server
+"""
+
+import subprocess
+import socket
+import os
+import sys
+import threading
+import signal
+import atexit
+from pathlib import Path
+
+MCP_NAME = "${mcpName}"
+SOCKET_PATH = "${socketPath}"
+ORIGINAL_COMMAND = "${originalRunCommand}"
+
+def cleanup():
+    """Clean up socket file on exit"""
+    try:
+        if os.path.exists(SOCKET_PATH):
+            os.unlink(SOCKET_PATH)
+    except Exception:
+        pass
+
+def signal_handler(signum, frame):
+    """Handle termination signals"""
+    cleanup()
+    sys.exit(0)
+
+def main():
+    # Ensure transport directory exists
+    transport_dir = os.path.dirname(SOCKET_PATH)
+    os.makedirs(transport_dir, exist_ok=True)
+
+    # Clean up any existing socket
+    cleanup()
+
+    # Register cleanup function
+    atexit.register(cleanup)
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    # Start the MCP server process
+    try:
+        # Parse the command properly
+        cmd_parts = ORIGINAL_COMMAND.split()
+        if cmd_parts[0] == "python" or cmd_parts[0] == "python3":
+            cmd_parts[0] = "${pythonPath}"
+
+        mcp_process = subprocess.Popen(
+            cmd_parts,
+            cwd=os.path.dirname(__file__),
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env={**os.environ, "NODE_OPTIONS": "--no-warnings"}
+        )
+    except Exception as e:
+        print(f"[Furikake] Failed to spawn MCP process: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Forward stdio for PM2 compatibility
+    def forward_output():
+        while True:
+            data = mcp_process.stdout.read(1024)
+            if not data:
+                break
+            sys.stdout.buffer.write(data)
+            sys.stdout.buffer.flush()
+
+    def forward_error():
+        while True:
+            data = mcp_process.stderr.read(1024)
+            if not data:
+                break
+            sys.stderr.buffer.write(data)
+            sys.stderr.buffer.flush()
+
+    # Start forwarding threads
+    stdout_thread = threading.Thread(target=forward_output, daemon=True)
+    stderr_thread = threading.Thread(target=forward_error, daemon=True)
+    stdout_thread.start()
+    stderr_thread.start()
+
+    # Forward stdin
+    def forward_stdin():
+        while True:
+            try:
+                data = sys.stdin.buffer.read(1024)
+                if not data:
+                    break
+                mcp_process.stdin.write(data)
+                mcp_process.stdin.flush()
+            except Exception:
+                break
+
+    stdin_thread = threading.Thread(target=forward_stdin, daemon=True)
+    stdin_thread.start()
+
+    # Create Unix socket server for additional connections
+    def handle_socket_client(client_socket):
+        try:
+            # Create bidirectional communication with MCP process
+            def client_to_mcp():
+                while True:
+                    try:
+                        data = client_socket.recv(1024)
+                        if not data:
+                            break
+                        mcp_process.stdin.write(data)
+                        mcp_process.stdin.flush()
+                    except Exception:
+                        break
+
+            def mcp_to_client():
+                while True:
+                    try:
+                        data = mcp_process.stdout.read(1024)
+                        if not data:
+                            break
+                        client_socket.send(data)
+                    except Exception:
+                        break
+
+            # Start communication threads
+            t1 = threading.Thread(target=client_to_mcp, daemon=True)
+            t2 = threading.Thread(target=mcp_to_client, daemon=True)
+            t1.start()
+            t2.start()
+
+            # Wait for threads to complete
+            t1.join()
+            t2.join()
+
+        except Exception as e:
+            print(f"[Furikake] Socket client error: {e}", file=sys.stderr)
+        finally:
+            try:
+                client_socket.close()
+            except Exception:
+                pass
+
+    def socket_server():
+        try:
+            server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+            server.bind(SOCKET_PATH)
+            os.chmod(SOCKET_PATH, 0o666)
+            server.listen(5)
+
+            while True:
+                client_socket, _ = server.accept()
+                client_thread = threading.Thread(
+                    target=handle_socket_client,
+                    args=(client_socket,),
+                    daemon=True
+                )
+                client_thread.start()
+
+        except Exception as e:
+            print(f"[Furikake] Socket server error: {e}", file=sys.stderr)
+
+    # Start socket server in background
+    socket_thread = threading.Thread(target=socket_server, daemon=True)
+    socket_thread.start()
+
+    # Wait for MCP process to complete
+    try:
+        mcp_process.wait()
+    except KeyboardInterrupt:
+        mcp_process.terminate()
+        mcp_process.wait()
+    finally:
+        cleanup()
+        sys.exit(mcp_process.returncode or 0)
+
+if __name__ == "__main__":
+    main()
+`;
+
+    // Write the wrapper file
+    writeFileSync(wrapperPath, wrapperContent, { mode: 0o755 });
+
+    // Return the new run command
+    return {
+      success: true,
+      runCommand: `${pythonPath} ${relative(packagePath, wrapperPath)}`,
+    };
+  } catch (error) {
+    console.warn(
+      `Failed to create Python transport wrapper: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+    return { success: false };
+  }
+}
+
+// Create a transport wrapper that enables multiple connection methods for Node.js/TypeScript
 async function createTransportWrapper(
   packagePath: string,
   mcpName: string,
@@ -407,6 +806,131 @@ function addErrorSuggestions(errorText: string): string {
   return suggestions;
 }
 
+// Initialize Python MCP package
+async function initializePythonPackage(
+  mcpName: string,
+  packagePath: string,
+  pythonInfo: ReturnType<typeof detectPythonPackageType>,
+  smitheryConfig: SmitheryConfig
+): Promise<PackageOutput> {
+  try {
+    // Setup Python virtual environment and install dependencies
+    const pythonSetup = await setupPythonEnvironment(packagePath, pythonInfo);
+    
+    if (!pythonSetup.success) {
+      return {
+        success: false,
+        message: pythonSetup.error || "Failed to setup Python environment",
+      };
+    }
+
+    // Determine run command based on smithery.yaml or auto-detect
+    let runCommand = "";
+    
+    if (smitheryConfig.commandFunction?.run) {
+      runCommand = smitheryConfig.commandFunction.run;
+    } else if (pythonInfo.mainModule) {
+      // Use the detected main module
+      runCommand = `python ${pythonInfo.mainModule}`;
+    } else {
+      // Try common patterns
+      const commonEntryPoints = [
+        "main.py",
+        "app.py",
+        "server.py",
+        "mcp_server.py",
+        "__main__.py"
+      ];
+      
+      for (const entryPoint of commonEntryPoints) {
+        if (existsSync(join(packagePath, entryPoint))) {
+          runCommand = `python ${entryPoint}`;
+          break;
+        }
+      }
+    }
+
+    if (!runCommand) {
+      return {
+        success: false,
+        message: "Could not determine Python entry point. Please specify run command in smithery.yaml",
+      };
+    }
+
+    // Create transport wrapper for Python MCP server
+    const wrapperCreated = await createPythonTransportWrapper(
+      packagePath,
+      mcpName,
+      runCommand,
+      pythonSetup.pythonPath!
+    );
+
+    // Use wrapper command if successfully created
+    const actualRunCommand = wrapperCreated.success
+      ? wrapperCreated.runCommand!
+      : `${pythonSetup.pythonPath} ${runCommand.replace(/^python\s+/, "")}`;
+
+    // Update configuration.json
+    const configPath = resolveFromUserData("configuration.json");
+    const configExists = existsSync(configPath);
+    let config: Record<string, any> = {};
+
+    try {
+      if (configExists) {
+        try {
+          const configContent = readFileSync(configPath, "utf-8");
+          if (configContent.trim()) {
+            config = JSON.parse(configContent);
+          }
+        } catch (parseError) {
+          // config remains {}
+        }
+      }
+
+      if (!config.installed) {
+        config.installed = {};
+      }
+
+      const socketPath = resolveFromUserData(
+        `/transport/furi_${mcpName.replace("/", "-")}.sock`
+      );
+
+      config.installed[mcpName] = {
+        run: actualRunCommand,
+        source: packagePath,
+        socketPath: socketPath,
+        originalRun: runCommand,
+        transportWrapper: wrapperCreated.success,
+        packageType: "python",
+        pythonPath: pythonSetup.pythonPath,
+        venvPath: pythonSetup.venvPath,
+      };
+
+      writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to update configuration: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      };
+    }
+
+    return {
+      success: true,
+      message: `${mcpName} (Python) initialized`,
+      runCommand: actualRunCommand,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: `Failed to initialize Python package: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    };
+  }
+}
+
 // The goal of this function is to initialize the package
 // Get it to the point where it can be used by the user
 export const initializePackage = async (
@@ -453,14 +977,22 @@ export const initializePackage = async (
       }
     }
 
-    // Check if package.json exists
+    // Detect package type - Python or Node.js
+    const pythonInfo = detectPythonPackageType(packagePath);
     const packageJsonPath = join(packagePath, "package.json");
     const packageJsonExists = existsSync(packageJsonPath);
 
-    if (!packageJsonExists) {
+    // Handle package type selection
+    if (pythonInfo.isPython && packageJsonExists) {
+      // Both Python and Node.js files detected - prioritize Node.js if package.json exists
+      console.log(`[${mcpName}] Both Python and Node.js files detected. Prioritizing Node.js (package.json found).`);
+    } else if (pythonInfo.isPython && !packageJsonExists) {
+      // Pure Python package
+      return await initializePythonPackage(mcpName, packagePath, pythonInfo, smitheryConfig);
+    } else if (!packageJsonExists && !pythonInfo.isPython) {
       return {
         success: false,
-        message: "Not a Node.js package: package.json not found",
+        message: "Not a supported package: No package.json (Node.js) or Python files found",
       };
     }
 
@@ -1019,6 +1551,7 @@ process.on('SIGTERM', () => child.kill('SIGTERM'));
         socketPath: socketPath,
         originalRun: finalRunCommand,
         transportWrapper: wrapperCreated.success ? true : false,
+        packageType: "nodejs",
       };
 
       try {
