@@ -1,6 +1,10 @@
 import { readFileSync } from "fs";
-import pm2 from "pm2";
 import { resolveFromUserData } from "@/helpers/paths";
+import {
+  connectToPm2,
+  disconnectFromPm2,
+  getPm2List,
+} from "@/helpers/mcpConnectionManager";
 
 export function formatUptime(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -65,25 +69,9 @@ export const getProcStatus = async (
       };
     }
 
-    await new Promise<void>((resolve, reject) => {
-      pm2.connect((err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve();
-      });
-    });
+    await connectToPm2();
 
-    const processList = await new Promise<any[]>((resolve, reject) => {
-      pm2.list((err, list) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(list);
-      });
-    });
+    const processList = await getPm2List();
 
     if (mcpName === "all") {
       // Get all running MCP processes from PM2
@@ -106,7 +94,7 @@ export const getProcStatus = async (
         });
 
       // Get all installed MCPs from configuration
-      const allMCPs = [];
+      const allMCPs = [] as MCPStatus[];
 
       // Check root level packages (for backward compatibility)
       // Identify packages by checking if the value is an object and has a 'run' command
@@ -123,14 +111,14 @@ export const getProcStatus = async (
 
         // Find exact match by process name
         const process = runningProcesses.find(
-          (p) => p.name === expectedProcessName
+          (p) => p.name === (expectedProcessName as any)
         );
 
         if (process) {
           allMCPs.push({
-            ...process,
+            ...(process as any),
             name: configName, // Use the config name for display
-          });
+          } as MCPStatus);
         } else {
           // No matching process found, show as offline
           allMCPs.push({
@@ -155,14 +143,14 @@ export const getProcStatus = async (
 
           // Find exact match by process name
           const process = runningProcesses.find(
-            (p) => p.name === expectedProcessName
+            (p) => p.name === (expectedProcessName as any)
           );
 
           if (process) {
             allMCPs.push({
-              ...process,
+              ...(process as any),
               name: configName,
-            });
+            } as MCPStatus);
           } else {
             allMCPs.push({
               name: configName,
@@ -242,6 +230,6 @@ export const getProcStatus = async (
       message: `Failed to get status: ${error.message || String(error)}`,
     };
   } finally {
-    pm2.disconnect();
+    await disconnectFromPm2();
   }
 };

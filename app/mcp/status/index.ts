@@ -6,6 +6,10 @@ import path from "path";
 import os from "os";
 import { $ } from "bun";
 import pm2 from "pm2";
+import {
+  connectToPm2,
+  disconnectFromPm2,
+} from "@/helpers/mcpConnectionManager";
 
 /**
  * Get PM2 logs for a specific MCP
@@ -19,16 +23,8 @@ const getMCPLogs = async (
   try {
     const pmName = `furi_${mcpName.replace("/", "-")}`;
 
-    // Connect to PM2
-    await new Promise<void>((resolve, reject) => {
-      pm2.connect((err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve();
-      });
-    });
+    // Connect to PM2 (ref-counted)
+    await connectToPm2();
 
     try {
       // Get process information to find log paths
@@ -83,8 +79,8 @@ const getMCPLogs = async (
 
       return { success: true, output: outputLogs, error: errorLogs };
     } finally {
-      // Always disconnect from PM2
-      pm2.disconnect();
+      // Always release PM2 lease
+      await disconnectFromPm2();
     }
   } catch (error) {
     return {

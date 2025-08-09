@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync } from "fs";
+import { readFileSync, writeFileSync, existsSync, statSync } from "fs";
 import { resolveFromBase, resolveFromUserData } from "@/helpers/paths";
 
 interface Config {
@@ -12,6 +12,10 @@ interface Config {
   [key: string]: any;
 }
 
+// Lightweight cache for configuration to reduce filesystem reads
+let cachedConfig: Config | null = null;
+let cachedConfigMtimeMs: number | null = null;
+
 /**
  * Read the current configuration from configuration.json
  */
@@ -19,12 +23,22 @@ export const readConfig = (): Config => {
   const configPath = resolveFromUserData("configuration.json");
 
   if (!existsSync(configPath)) {
+    cachedConfig = {};
+    cachedConfigMtimeMs = null;
     return {};
   }
 
   try {
+    const { mtimeMs } = statSync(configPath);
+    if (cachedConfig && cachedConfigMtimeMs === mtimeMs) {
+      return cachedConfig;
+    }
+
     const configContent = readFileSync(configPath, "utf-8");
-    return JSON.parse(configContent);
+    const parsed = JSON.parse(configContent);
+    cachedConfig = parsed;
+    cachedConfigMtimeMs = mtimeMs;
+    return parsed;
   } catch (error) {
     console.error("Error reading configuration:", error);
     return {};
@@ -39,6 +53,15 @@ export const writeConfig = (config: Config): void => {
 
   try {
     writeFileSync(configPath, JSON.stringify(config, null, 2), "utf-8");
+    // Invalidate cache; next read will refresh
+    try {
+      const { mtimeMs } = statSync(configPath);
+      cachedConfig = config;
+      cachedConfigMtimeMs = mtimeMs;
+    } catch {
+      cachedConfig = null;
+      cachedConfigMtimeMs = null;
+    }
   } catch (error) {
     console.error("Error writing configuration:", error);
     throw error;

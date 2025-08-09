@@ -68,8 +68,42 @@ export const getToolsFromMcp = async (
   }
 };
 
+// Small concurrency limiter to avoid blasting many MCPs at the same time
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  mapper: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length) as any;
+  let idx = 0;
+  let active = 0;
+  return new Promise((resolve, reject) => {
+    const next = () => {
+      if (idx >= items.length && active === 0) return resolve(results);
+      while (active < limit && idx < items.length) {
+        const current = idx++;
+        active++;
+        const item = items[current]!; // current is within bounds
+        mapper(item)
+          .then((res) => {
+            results[current] = res as any;
+          })
+          .catch((err) => {
+            results[current] = err as any;
+          })
+          .finally(() => {
+            active--;
+            next();
+          });
+      }
+    };
+    next();
+  });
+}
+
 export const getToolsFromAllMcps = async (
-  spinner?: any
+  spinner?: any,
+  maxConcurrency: number = 6
 ): Promise<McpToolsResult[]> => {
   try {
     // Get list of all MCPs
@@ -91,15 +125,14 @@ export const getToolsFromAllMcps = async (
       throw new Error(`No online MCPs found`);
     }
 
-    const allResults: McpToolsResult[] = [];
+    // Fetch in parallel with capped concurrency
+    const results = await mapWithConcurrency(
+      onlineMcps,
+      Math.max(1, maxConcurrency),
+      (mcp) => getToolsFromMcp(mcp, spinner)
+    );
 
-    // Process each MCP sequentially to avoid connection conflicts
-    for (const mcp of onlineMcps) {
-      const result = await getToolsFromMcp(mcp, spinner);
-      allResults.push(result);
-    }
-
-    return allResults;
+    return results as McpToolsResult[];
   } catch (error: any) {
     // Make sure to disconnect from PM2 in case of error
     try {

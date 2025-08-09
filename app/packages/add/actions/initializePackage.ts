@@ -26,6 +26,19 @@ type SmitheryConfig = {
   };
 };
 
+// Prefer fast and quiet package installs; use npm ci when a lockfile is present
+function getInstallCommandParts(packagePath: string): string {
+  const hasPackageLock = existsSync(join(packagePath, "package-lock.json"));
+  const base = hasPackageLock ? "npm ci" : "npm install";
+  return `cd ${packagePath} && ${base} --ignore-scripts --no-audit --no-fund --silent`;
+}
+
+function getInstallLegacyCommandParts(packagePath: string): string {
+  const hasPackageLock = existsSync(join(packagePath, "package-lock.json"));
+  const base = hasPackageLock ? "npm ci" : "npm install";
+  return `cd ${packagePath} && ${base} --ignore-scripts --legacy-peer-deps --no-audit --no-fund --silent`;
+}
+
 // Create a transport wrapper that enables multiple connection methods
 async function createTransportWrapper(
   packagePath: string,
@@ -105,14 +118,11 @@ async function createTransportWrapper(
           );
         }
       } else {
-        // Install tsx as fallback for TypeScript execution
-        try {
-          await Bun.$`cd ${packagePath} && npm install --save-dev tsx`.quiet();
-          executionCommand = originalRunCommand.replace(/^node\s+/, "npx tsx ");
-        } catch (installError) {
-          console.warn(`Failed to install tsx: ${String(installError)}`);
-          // Keep original command as fallback
-        }
+        // Avoid extra installs; rely on npx to fetch tsx on demand
+        executionCommand = originalRunCommand.replace(
+          /^node\s+/,
+          "npx --yes tsx "
+        );
       }
     }
 
@@ -531,8 +541,8 @@ export const initializePackage = async (
 
     // Install dependencies but skip the build step
     try {
-      // Install dependencies but skip scripts to avoid build issues
-      await Bun.$`cd ${packagePath} && npm install --ignore-scripts`.quiet();
+      // Install dependencies but skip scripts to avoid build issues (fast + quiet)
+      await Bun.$`sh -c ${getInstallCommandParts(packagePath)}`.quiet();
 
       // Check if the package already has a dist/ or lib/ directory with compiled JS
       const hasDistDir = existsSync(join(packagePath, "dist"));
@@ -674,20 +684,8 @@ process.on('SIGTERM', () => {
                 writeFileSync(join(distDir, "index.js"), cjsWrapper, "utf-8");
               }
 
-              // Add tsx as a dependency instead of ts-node for better compatibility
-              try {
-                await Bun.$`cd ${packagePath} && npm install --save-dev tsx typescript`.quiet();
-                buildSuccessful = true;
-              } catch (installError: any) {
-                console.warn(`Failed to install tsx: ${String(installError)}`);
-                // Capture detailed error information for tsx install failure
-                if (installError.stderr) {
-                  const stderrText = installError.stderr.toString().trim();
-                  if (stderrText) {
-                    console.warn(`Install error details: ${stderrText}`);
-                  }
-                }
-              }
+              // Avoid installing dev deps; rely on npx to fetch tsx on demand
+              buildSuccessful = true;
             } else {
               console.warn(`Could not find TypeScript entry point`);
             }
@@ -711,7 +709,9 @@ process.on('SIGTERM', () => {
 
         try {
           // Retry with legacy peer deps flag
-          await Bun.$`cd ${packagePath} && npm install --ignore-scripts --legacy-peer-deps`.quiet();
+          await Bun.$`sh -c ${getInstallLegacyCommandParts(
+            packagePath
+          )}`.quiet();
 
           // If successful, continue with the build process
           const hasDistDir = existsSync(join(packagePath, "dist"));
@@ -821,14 +821,8 @@ process.on('SIGTERM', () => child.kill('SIGTERM'));
                     );
                   }
 
-                  try {
-                    await Bun.$`cd ${packagePath} && npm install --save-dev tsx typescript --legacy-peer-deps`.quiet();
-                    buildSuccessful = true;
-                  } catch (installError: any) {
-                    console.warn(
-                      `Failed to install tsx: ${String(installError)}`
-                    );
-                  }
+                  // Avoid installing dev deps; rely on npx to fetch tsx on demand
+                  buildSuccessful = true;
                 }
               }
             } else {

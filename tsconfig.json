@@ -30,5 +30,7 @@
     "paths": {
       "@/*": ["app/*"]
     }
-  }
+  },
+  "include": ["index.ts", "app/**/*.ts"],
+  "exclude": ["node_modules", "dist", "installed", "**/tests/**"]
 }

@@ -1,5 +1,10 @@
 import { getPooledConnection } from "@/helpers/mcpConnectionManager";
 
+// Per-MCP tool list micro cache
+const toolListCache: Map<string, { timestamp: number; tools: any[] }> =
+  new Map();
+const TOOL_LIST_TTL_MS = 1000; // very fresh; reduces redundant listTools within bursts
+
 export const executeToolCall = async (
   mcpName: string,
   toolName: string,
@@ -32,15 +37,23 @@ export const executeToolCall = async (
       );
     }
 
-    // List available tools to validate the requested tool
-    const tools = await client.listTools();
-    const requestedTool = tools.tools.find(
-      (tool: any) => tool.name === toolName
-    );
+    // Prefer cached tools to avoid listTools calls under bursts
+    const now = Date.now();
+    const cached = toolListCache.get(mcpName);
+    let toolsArr: any[];
+    if (cached && now - cached.timestamp < TOOL_LIST_TTL_MS) {
+      toolsArr = cached.tools;
+    } else {
+      const listed = await client.listTools();
+      toolsArr = listed && Array.isArray(listed.tools) ? listed.tools : [];
+      toolListCache.set(mcpName, { timestamp: now, tools: toolsArr });
+    }
+
+    const requestedTool = toolsArr.find((tool: any) => tool.name === toolName);
 
     if (!requestedTool) {
       throw new Error(
-        `Tool '${toolName}' not found. Available tools: ${tools.tools
+        `Tool '${toolName}' not found. Available tools: ${toolsArr
           .map((t: any) => t.name)
           .join(", ")}`
       );

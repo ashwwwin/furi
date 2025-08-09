@@ -8,6 +8,42 @@ import {
 import { isAbsolute } from "path";
 import { readConfig, getSocketPath } from "./config";
 
+// Internal PM2 connection ref-count and caching
+let pm2Connected = false;
+let pm2LeaseCount = 0;
+let pm2ListCache: { timestamp: number; data: any[] } | null = null;
+const PM2_LIST_TTL_MS = 500; // keep very fresh while cutting repeated IPC
+
+function actuallyConnectToPm2(): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    pm2.connect((err) => {
+      if (err) {
+        reject(new Error(`Failed to connect to PM2: ${err.message}`));
+        return;
+      }
+      pm2Connected = true;
+      resolve();
+    });
+  });
+}
+
+function actuallyDisconnectFromPm2(): void {
+  pm2.disconnect();
+  pm2Connected = false;
+}
+
+async function getPm2ListInternal(): Promise<any[]> {
+  return new Promise<any[]>((resolve, reject) => {
+    pm2.list((err, list) => {
+      if (err) {
+        reject(new Error(`Failed to get process list: ${err.message}`));
+        return;
+      }
+      resolve(list);
+    });
+  });
+}
+
 // Types for MCP client and transport
 export interface McpClient {
   connect: (transport: any) => Promise<void>;
@@ -305,6 +341,7 @@ export const isUnixSocketAvailable = (mcpName: string): boolean => {
   const exists = fs.existsSync(socketPath);
   if (!exists && (process.env.DEBUG || process.env.VERBOSE)) {
     console.log(`[${mcpName}] Unix socket not found at ${socketPath}`);
+    return false;
   }
   return exists;
 };
@@ -342,41 +379,42 @@ export const getConnectionInfo = async (
   }
 };
 
-// Connect to PM2
+// Connect to PM2 with ref-count; fast no-op if already connected
 export const connectToPm2 = async (): Promise<void> => {
-  return new Promise<void>((resolve, reject) => {
-    pm2.connect((err) => {
-      if (err) {
-        reject(new Error(`Failed to connect to PM2: ${err.message}`));
-        return;
-      }
-      resolve();
-    });
-  });
+  pm2LeaseCount += 1;
+  if (pm2Connected) return;
+  await actuallyConnectToPm2();
 };
 
-// Disconnect from PM2
-export const disconnectFromPm2 = (): Promise<void> => {
-  return new Promise<void>((resolve) => {
-    pm2.disconnect();
-    resolve();
-  });
+// Disconnect from PM2; only actually disconnect when all leases released
+export const disconnectFromPm2 = async (): Promise<void> => {
+  if (pm2LeaseCount > 0) pm2LeaseCount -= 1;
+  if (pm2LeaseCount === 0 && pm2Connected) {
+    actuallyDisconnectFromPm2();
+  }
 };
 
-// Get PM2 process list
+// Forcefully reset PM2 connection (e.g., on shutdown)
+export const resetPm2Connection = (): void => {
+  pm2LeaseCount = 0;
+  if (pm2Connected) {
+    actuallyDisconnectFromPm2();
+  }
+  pm2ListCache = null;
+};
+
+// Get PM2 process list with short-lived cache
 export const getPm2List = async (): Promise<any[]> => {
-  return new Promise<any[]>((resolve, reject) => {
-    pm2.list((err, list) => {
-      if (err) {
-        reject(new Error(`Failed to get process list: ${err.message}`));
-        return;
-      }
-      resolve(list);
-    });
-  });
+  const now = Date.now();
+  if (pm2ListCache && now - pm2ListCache.timestamp < PM2_LIST_TTL_MS) {
+    return pm2ListCache.data;
+  }
+  const list = await getPm2ListInternal();
+  pm2ListCache = { timestamp: now, data: list };
+  return list;
 };
 
-// Get PM2 process info
+// Get PM2 process info without caching (precise)
 export const getPm2ProcessInfo = async (processName: string): Promise<any> => {
   return new Promise<any>((resolve, reject) => {
     pm2.describe(processName, (err, proc) => {

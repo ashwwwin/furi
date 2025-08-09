@@ -2,6 +2,10 @@ import fs from "fs";
 import { $ } from "bun";
 import pm2 from "pm2";
 import { formatUptime, formatMemory } from "@/mcp/status/actions/getProcStatus";
+import {
+  connectToPm2,
+  disconnectFromPm2,
+} from "@/helpers/mcpConnectionManager";
 
 export interface HttpServerStatus {
   name: string;
@@ -124,13 +128,13 @@ export const getHttpServerStatusData = async (
 
   try {
     // Connect to PM2
-    await connectToPM2();
+    await connectToPm2();
 
     // Get server info
     const processInfo = await getProcessInfo(appName);
 
     if (!processInfo) {
-      pm2.disconnect();
+      await disconnectFromPm2();
       return {
         serverStatus: "offline",
         message: "HTTP API server is not running",
@@ -144,7 +148,7 @@ export const getHttpServerStatusData = async (
     // Get logs
     const logs = await getHttpServerLogs(lines, processInfo);
 
-    pm2.disconnect();
+    await disconnectFromPm2();
 
     return {
       serverStatus: "online",
@@ -152,7 +156,7 @@ export const getHttpServerStatusData = async (
       logs,
     };
   } catch (error: any) {
-    pm2.disconnect();
+    await disconnectFromPm2();
     throw new Error(
       `Failed to get HTTP API server status: ${error.message || String(error)}`
     );
