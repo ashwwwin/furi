@@ -1,6 +1,4 @@
-![image](https://github.com/user-attachments/assets/8f313cdd-0452-4227-8aea-75127d779f56)
-
-# 🍃 Furikake (or furi)
+# furi
 
 furi is an easy to use, CLI & API for MCP management.
 
